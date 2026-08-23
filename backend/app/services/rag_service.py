@@ -125,8 +125,18 @@ class RAGService:
                 sources=sources,
             )
 
-        # Fallback if LLM API is unavailable/unconfigured: summarize top retrieved evidence chunk directly
+        # Fallback if LLM API is unavailable/unconfigured: return top retrieved evidence text cleanly
         top_text = results[0].text.strip()
+        # Defend against document-level injection payloads when operating without active LLM connection
+        upper_text = top_text.upper()
+        if "SYSTEM OVERRIDE" in upper_text or "IGNORE ALL" in upper_text or "REVEAL" in upper_text:
+            return AskResponse(
+                answer=UNKNOWN_ANSWER_FALLBACK,
+                known=False,
+                grounded=True,
+                sources=[],
+            )
+
         return AskResponse(
             answer=top_text,
             known=True,

@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     EMBEDDING_MODEL: str = "all-MiniLM-L6-v2"
     VECTORSTORE_DIR: str = "vectorstore"
     DEFAULT_TOP_K: int = 5
-    RELEVANCE_THRESHOLD: float = 0.40
+    RELEVANCE_THRESHOLD: float = 0.45
 
     model_config = SettingsConfigDict(
         env_file=".env",
