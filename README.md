@@ -50,40 +50,6 @@ To architect a reliable, secure, zero-hallucination knowledge assistant that:
 
 ---
 
-## 5. Architecture
-
-```mermaid
-graph TD
-    subgraph Client ["Frontend Layer (React + Vite + TS)"]
-        UI[Knowledge Portal UI]
-        APIClient[API Service Layer]
-        UI --> APIClient
-    end
-
-    subgraph Server ["Backend Layer (FastAPI)"]
-        Router[FastAPI Route Handlers]
-        Config[Pydantic Configuration]
-        Health[Health Endpoint /health]
-        Services[Service Layer (Modular)]
-        Router --> Health
-        Router --> Services
-        Config --> Router
-    end
-
-    subgraph FuturePipelines ["Phase 2+ Storage & Intelligence"]
-        DataStore[(Document Store)]
-        VectorDB[(FAISS Vector Index)]
-        LLM[Gemini 1.5 RAG Model]
-    end
-
-    APIClient -->|HTTP / CORS| Router
-    Services -.-> DataStore
-    Services -.-> VectorDB
-    Services -.-> LLM
-```
-
----
-
 ## 6. Technology Stack
 
 ### Backend
