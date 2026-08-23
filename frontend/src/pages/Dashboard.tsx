@@ -2,14 +2,22 @@ import React from 'react';
 import { KnowledgeBaseStats } from '../components/KnowledgeBaseStats';
 import { DocumentSection } from '../components/DocumentSection';
 import { ChatSection } from '../components/ChatSection';
-import { HealthState } from '../types';
-import { Sparkles, Terminal, Layers, ArrowRight } from 'lucide-react';
+import { HealthState, DocumentItem } from '../types';
+import { Sparkles, Terminal, Layers, ShieldCheck } from 'lucide-react';
 
 interface DashboardProps {
   health: HealthState;
+  documents: DocumentItem[];
+  isDocsLoading: boolean;
+  onRefreshDocuments: () => void;
 }
 
-export const Dashboard: React.FC<DashboardProps> = ({ health }) => {
+export const Dashboard: React.FC<DashboardProps> = ({
+  health,
+  documents,
+  isDocsLoading,
+  onRefreshDocuments,
+}) => {
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
       {/* Hero / System Overview Card */}
@@ -17,15 +25,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ health }) => {
         <div className="absolute top-0 right-0 -mt-8 -mr-8 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="max-w-2xl">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-indigo-500/10 text-indigo-300 border border-indigo-500/25 mb-3">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-300 border border-emerald-500/25 mb-3">
               <Sparkles className="w-3.5 h-3.5" />
-              <span>Modular Architecture &bull; Scalable Foundation</span>
+              <span>Phase 4 &bull; Grounded RAG &amp; Zero-Hallucination Answering Active</span>
             </div>
             <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight text-white">
               Enterprise Document Intelligence
             </h2>
             <p className="text-sm text-slate-300 mt-2 leading-relaxed">
-              A high-precision Retrieval-Augmented Generation (RAG) platform designed to ingest proprietary enterprise documents, prevent hallucinations through strict grounding, and protect sensitive data.
+              Upload enterprise PDF documentation to chunk, embed, index in FAISS, and generate strictly document-grounded answers powered by Google Gemini with source citations and refusal fallbacks.
             </p>
           </div>
 
@@ -35,9 +43,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ health }) => {
                 <Terminal className="w-4 h-4" />
               </div>
               <div>
-                <p className="font-medium text-slate-200">Backend Endpoint</p>
+                <p className="font-medium text-slate-200">Backend Status</p>
                 <p className="font-mono text-[11px] text-slate-400">
-                  {health.data ? `${health.data.service} (${health.data.status})` : 'GET /health'}
+                  {health.data ? `${health.data.service} (v0.1.0)` : 'Connecting...'}
                 </p>
               </div>
             </div>
@@ -46,13 +54,17 @@ export const Dashboard: React.FC<DashboardProps> = ({ health }) => {
       </div>
 
       {/* Stats Bar */}
-      <KnowledgeBaseStats />
+      <KnowledgeBaseStats documents={documents} />
 
       {/* Core Workspace Layout: Document Knowledge Base & Grounded Chat */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-[540px]">
-        {/* Documents Knowledge Management (4 cols on lg) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-[560px]">
+        {/* Documents Knowledge Management (5 cols on lg) */}
         <div className="lg:col-span-5">
-          <DocumentSection />
+          <DocumentSection
+            documents={documents}
+            isLoading={isDocsLoading}
+            onRefresh={onRefreshDocuments}
+          />
         </div>
 
         {/* Knowledge Assistant Interaction (7 cols on lg) */}
@@ -66,12 +78,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ health }) => {
         <div className="flex items-center gap-2">
           <Layers className="w-4 h-4 text-indigo-400 flex-shrink-0" />
           <span>
-            <strong className="text-slate-200">Phase 1 Foundation:</strong> Project structure, FastAPI &amp; React runtime, CORS, health test suite, and environment configuration validated.
+            <strong className="text-slate-200">Phase 4 Grounded RAG:</strong> Vector retrieval, evidence sufficiency check, prompt injection defense, Gemini LLM synthesis, source citations, and `/api/ask` active.
           </span>
         </div>
-        <div className="flex items-center gap-2 text-indigo-400 font-medium whitespace-nowrap">
-          <span>Next: Phase 2 Document Pipeline</span>
-          <ArrowRight className="w-3.5 h-3.5" />
+        <div className="flex items-center gap-2 text-emerald-400 font-medium whitespace-nowrap">
+          <ShieldCheck className="w-4 h-4" />
+          <span>Zero-Hallucination Shield Active</span>
         </div>
       </div>
     </main>
