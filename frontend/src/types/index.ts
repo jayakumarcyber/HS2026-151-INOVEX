@@ -20,6 +20,7 @@ export interface DocumentItem {
   filename: string;
   file_size: number;
   upload_timestamp: string;
+  file_type?: string | null;
   pages?: number | null;
   status: DocumentProcessingStatus;
   error_message?: string | null;
@@ -72,7 +73,9 @@ export interface SearchResultItem {
   chunk_id: string;
   document_id: string;
   document_name: string;
+  file_type?: string;
   page: number;
+  section_label?: string;
   text: string;
   score: number;
 }
@@ -86,6 +89,7 @@ export interface SearchResponse {
 export interface SourceCitation {
   document: string;
   page: number;
+  section_label?: string;
   chunk_id: string;
   score: number;
 }

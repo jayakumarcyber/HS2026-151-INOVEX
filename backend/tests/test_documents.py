@@ -58,14 +58,14 @@ def test_valid_pdf_upload():
     assert data["status"] == "uploaded"
 
 
-def test_non_pdf_extension_rejection():
-    """Verify that non-PDF extensions are rejected."""
+def test_unsupported_extension_rejection():
+    """Verify that unsupported extensions (e.g. .exe) are rejected."""
     response = client.post(
         "/api/documents/upload",
-        files={"file": ("notes.txt", b"This is a text file.", "text/plain")}
+        files={"file": ("hack.exe", b"executable binary content", "application/x-msdownload")}
     )
     assert response.status_code == 400
-    assert "Only PDF documents" in response.json()["detail"]
+    assert "Unsupported file type" in response.json()["detail"]
 
 
 def test_invalid_pdf_content_rejection():

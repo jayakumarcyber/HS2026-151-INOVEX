@@ -4,7 +4,8 @@ from typing import List, Optional
 
 class SourceCitation(BaseModel):
     document: str = Field(..., description="Source document filename")
-    page: int = Field(..., description="Page number")
+    page: int = Field(..., description="Page, row, or section number")
+    section_label: Optional[str] = Field(None, description="Human-readable citation label (e.g. Page 4, Row 12, Section)")
     chunk_id: str = Field(..., description="Unique chunk identifier")
     score: float = Field(..., description="Vector similarity score")
 

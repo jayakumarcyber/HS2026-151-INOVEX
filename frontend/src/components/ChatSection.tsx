@@ -245,7 +245,7 @@ export const ChatSection: React.FC = () => {
                         >
                           <span className="flex items-center gap-1.5 font-medium truncate">
                             <FileText className="w-3 h-3 text-[#16A34A] flex-shrink-0" />
-                            {cite.document} &bull; Page {cite.page}
+                            {cite.document} &bull; {cite.section_label || `Page ${cite.page}`}
                           </span>
                         </div>
                       ))}

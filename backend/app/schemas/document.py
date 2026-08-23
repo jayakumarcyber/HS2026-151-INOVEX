@@ -1,6 +1,5 @@
 from pydantic import BaseModel, Field
 from typing import List, Optional, Literal
-from datetime import datetime
 
 
 DocumentStatus = Literal["uploaded", "processing", "processed", "failed"]
@@ -12,6 +11,7 @@ class DocumentMetadata(BaseModel):
     stored_filename: str
     file_size: int
     upload_timestamp: str
+    file_type: Optional[str] = "pdf"
     pages: Optional[int] = None
     status: DocumentStatus = "uploaded"
     error_message: Optional[str] = None
@@ -22,6 +22,7 @@ class DocumentSummary(BaseModel):
     filename: str
     file_size: int
     upload_timestamp: str
+    file_type: Optional[str] = "pdf"
     pages: Optional[int] = None
     status: DocumentStatus
 
@@ -49,7 +50,9 @@ class DocumentProcessResponse(BaseModel):
 class ExtractedPage(BaseModel):
     document_id: str
     filename: str
+    file_type: Optional[str] = "pdf"
     page: int
+    section_label: Optional[str] = None
     text: str
     char_count: int
 
@@ -57,6 +60,7 @@ class ExtractedPage(BaseModel):
 class ExtractedDocument(BaseModel):
     document_id: str
     filename: str
+    file_type: Optional[str] = "pdf"
     total_pages: int
     extracted_at: str
     pages: List[ExtractedPage]

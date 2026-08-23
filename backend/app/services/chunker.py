@@ -1,5 +1,5 @@
 import uuid
-from typing import List
+from typing import List, Optional
 from app.config import settings
 from app.schemas.chunk import ChunkMetadata
 from app.schemas.document import ExtractedDocument, ExtractedPage
@@ -8,7 +8,7 @@ from app.services.text_cleaner import text_cleaner
 
 class TextChunker:
     """
-    Splits extracted PDF document page texts into overlapping chunks with full source traceability metadata.
+    Splits extracted document page/section texts into overlapping chunks with full source traceability metadata.
     """
 
     def __init__(self, chunk_size: int = None, chunk_overlap: int = None):
@@ -17,7 +17,7 @@ class TextChunker:
 
     def chunk_extracted_document(self, doc: ExtractedDocument) -> List[ChunkMetadata]:
         """
-        Chunks an ExtractedDocument page by page, attaching document_id, document_name, page, and chunk_id.
+        Chunks an ExtractedDocument section by section, attaching document_id, document_name, file_type, page, section_label, and chunk_id.
         """
         all_chunks: List[ChunkMetadata] = []
 
@@ -30,7 +30,9 @@ class TextChunker:
                 text=cleaned_text,
                 document_id=doc.document_id,
                 document_name=doc.filename,
+                file_type=doc.file_type or page.file_type or "pdf",
                 page_number=page.page,
+                section_label=page.section_label or f"Page {page.page}",
             )
             all_chunks.extend(page_chunks)
 
@@ -41,7 +43,9 @@ class TextChunker:
         text: str,
         document_id: str,
         document_name: str,
-        page_number: int,
+        file_type: str = "pdf",
+        page_number: int = 1,
+        section_label: Optional[str] = None,
     ) -> List[ChunkMetadata]:
         """
         Splits a single text string into overlapping character chunks while avoiding cutting words in half.
@@ -59,7 +63,9 @@ class TextChunker:
                     chunk_id=chunk_id,
                     document_id=document_id,
                     document_name=document_name,
+                    file_type=file_type,
                     page=page_number,
+                    section_label=section_label,
                     text=text.strip(),
                 )
             )
@@ -71,9 +77,7 @@ class TextChunker:
         while start < text_len:
             end = start + self.chunk_size
 
-            # If not at the end of the text, break at nearest whitespace to avoid word splitting
             if end < text_len:
-                # Look backwards for a space/newline up to 50 chars back
                 break_point = text.rfind(" ", start + self.chunk_size // 2, end)
                 if break_point != -1 and break_point > start:
                     end = break_point
@@ -87,7 +91,9 @@ class TextChunker:
                         chunk_id=chunk_id,
                         document_id=document_id,
                         document_name=document_name,
+                        file_type=file_type,
                         page=page_number,
+                        section_label=section_label,
                         text=chunk_content,
                     )
                 )
@@ -96,7 +102,6 @@ class TextChunker:
             if end >= text_len:
                 break
 
-            # Calculate next start with overlap
             start = end - self.chunk_overlap
             if start <= 0:
                 break

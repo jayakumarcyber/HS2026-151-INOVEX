@@ -166,6 +166,7 @@ class RAGService:
                         SourceCitation(
                             document=item.document_name,
                             page=item.page,
+                            section_label=getattr(item, "section_label", None) or f"Page {item.page}",
                             chunk_id=item.chunk_id,
                             score=1.0,
                         )
@@ -299,6 +300,7 @@ class RAGService:
             SourceCitation(
                 document=item.document_name,
                 page=item.page,
+                section_label=getattr(item, "section_label", None) or f"Page {item.page}",
                 chunk_id=item.chunk_id,
                 score=round(float(item.score), 4),
             )

@@ -18,6 +18,8 @@ interface DocumentSectionProps {
   onRefresh: () => void;
 }
 
+const SUPPORTED_EXTENSIONS = ['.pdf', '.docx', '.txt', '.csv', '.json', '.md', '.markdown'];
+
 export const DocumentSection: React.FC<DocumentSectionProps> = ({
   documents,
   isLoading,
@@ -49,15 +51,23 @@ export const DocumentSection: React.FC<DocumentSectionProps> = ({
     }
   };
 
+  const getFormatBadge = (filename: string, fileType?: string | null) => {
+    const ext = (fileType || filename.split('.').pop() || 'doc').toUpperCase();
+    return ext;
+  };
+
   const handleFileUpload = async (file: File) => {
-    if (!file.name.toLowerCase().endsWith('.pdf')) {
-      setErrorMessage('Only PDF documents (.pdf) are supported.');
+    const filenameLower = file.name.toLowerCase();
+    const isSupported = SUPPORTED_EXTENSIONS.some((ext) => filenameLower.endsWith(ext));
+
+    if (!isSupported) {
+      setErrorMessage('Supported formats: PDF, DOCX, TXT, CSV, JSON, Markdown');
       setSuccessMessage(null);
       return;
     }
 
     if (file.size > 20 * 1024 * 1024) {
-      setErrorMessage('File size exceeds the 20MB limit.');
+      setErrorMessage('File size exceeds the 20 MB limit.');
       setSuccessMessage(null);
       return;
     }
@@ -105,7 +115,7 @@ export const DocumentSection: React.FC<DocumentSectionProps> = ({
 
     try {
       const result = await apiService.processDocument(docId);
-      setSuccessMessage(`Processed ${result.pages} pages successfully.`);
+      setSuccessMessage(`Processed ${result.pages} sections successfully.`);
       onRefresh();
     } catch (err: unknown) {
       const errorMsg =
@@ -188,9 +198,8 @@ export const DocumentSection: React.FC<DocumentSectionProps> = ({
         </div>
       )}
 
-      {/* Upload & Document List 2-Column or Stacked Grid */}
+      {/* Upload Dropzone */}
       <div className="mt-4 grid grid-cols-1 gap-4 flex-1">
-        {/* Upload Dropzone */}
         <div
           onDragOver={(e) => {
             e.preventDefault();
@@ -208,7 +217,7 @@ export const DocumentSection: React.FC<DocumentSectionProps> = ({
           <input
             ref={fileInputRef}
             type="file"
-            accept=".pdf,application/pdf"
+            accept=".pdf,.docx,.txt,.csv,.json,.md,.markdown,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,text/csv,application/json,text/markdown"
             onChange={handleFileSelect}
             className="hidden"
             disabled={isUploading}
@@ -226,9 +235,12 @@ export const DocumentSection: React.FC<DocumentSectionProps> = ({
             {isUploading ? 'Uploading Document...' : 'Upload Knowledge Document'}
           </h3>
           <p className="text-[11px] text-[#A7B3AC] mt-0.5">
-            Drag and drop your PDF here or <span className="text-[#16A34A] font-medium underline">Browse files</span>
+            Drag &amp; Drop your file here or <span className="text-[#16A34A] font-medium underline">Browse Files</span>
           </p>
-          <span className="mt-1.5 text-[10px] text-[#738078]">
+          <p className="mt-1.5 text-[10px] text-[#22C55E] font-medium">
+            Supported: PDF • DOCX • TXT • CSV • JSON • Markdown
+          </p>
+          <span className="mt-1 text-[10px] text-[#738078]">
             Maximum file size: 20 MB
           </span>
         </div>
@@ -246,7 +258,7 @@ export const DocumentSection: React.FC<DocumentSectionProps> = ({
               <FileText className="w-6 h-6 text-[#738078] mb-2" />
               <p className="text-xs font-medium text-[#F5F7F6]">No knowledge documents yet</p>
               <p className="text-[11px] text-[#738078] max-w-xs mt-0.5">
-                Upload a PDF to get started.
+                Upload a document to get started.
               </p>
             </div>
           ) : (
@@ -254,6 +266,7 @@ export const DocumentSection: React.FC<DocumentSectionProps> = ({
               {documents.map((doc) => {
                 const isProcessingThis = processingDocId === doc.document_id;
                 const isDeletingThis = deletingDocId === doc.document_id;
+                const badge = getFormatBadge(doc.filename, doc.file_type);
 
                 return (
                   <div
@@ -262,8 +275,8 @@ export const DocumentSection: React.FC<DocumentSectionProps> = ({
                   >
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2.5 min-w-0">
-                        <div className="p-1.5 rounded bg-[#0B1711] text-[#16A34A] border border-[#1C3326] flex-shrink-0">
-                          <FileText className="w-3.5 h-3.5" />
+                        <div className="p-1.5 rounded bg-[#0B1711] text-[#16A34A] border border-[#1C3326] flex-shrink-0 font-bold text-[10px] uppercase">
+                          {badge}
                         </div>
                         <div className="min-w-0">
                           <p className="text-xs font-semibold text-[#F5F7F6] truncate" title={doc.filename}>
@@ -309,7 +322,7 @@ export const DocumentSection: React.FC<DocumentSectionProps> = ({
                     {/* Actions Bar */}
                     <div className="flex items-center justify-between pt-2 border-t border-[#1C3326] text-xs">
                       <div className="text-[11px] text-[#738078]">
-                        {doc.status === 'processed' ? `${doc.pages} Pages Extracted` : 'Awaiting extraction'}
+                        {doc.status === 'processed' ? `${doc.pages} Sections Indexed` : 'Awaiting extraction'}
                       </div>
 
                       <div className="flex items-center gap-2">

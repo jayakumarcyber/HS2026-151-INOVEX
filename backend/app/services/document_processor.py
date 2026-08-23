@@ -1,12 +1,11 @@
 import os
 import re
+import json
 import uuid
 import logging
 from pathlib import Path
 from datetime import datetime, timezone
-from typing import List, Tuple, Optional
-from pypdf import PdfReader
-from pypdf.errors import PyPdfError
+from typing import Tuple, Optional, List
 
 from app.config import settings
 from app.schemas.document import (
@@ -16,12 +15,13 @@ from app.schemas.document import (
     DocumentStatus
 )
 from app.services.metadata_manager import metadata_manager
+from app.services.parsers import get_parser, get_file_type, SUPPORTED_EXTENSIONS
 
 logger = logging.getLogger("document_processor")
 
 
 class DocumentProcessor:
-    """Service for validating, storing, and extracting page-level text from PDF documents."""
+    """Service for validating, storing, and extracting page/section-level text from multi-format knowledge documents."""
 
     def __init__(self, base_data_dir: Optional[Path] = None):
         if base_data_dir is None:
@@ -38,14 +38,12 @@ class DocumentProcessor:
         self.extracted_dir.mkdir(parents=True, exist_ok=True)
 
     def _get_safe_stored_filename(self, original_filename: str) -> Tuple[str, str]:
-        """Generates a UUID-prefixed safe filename to avoid collision and path traversal."""
+        """Generates a UUID-prefixed safe filename preserving the original extension."""
         doc_id = str(uuid.uuid4())
-        # Clean the filename to remove directory separators or dangerous chars
-        clean_name = Path(original_filename).name
-        clean_name = re.sub(r"[^a-zA-Z0-9_\-\.]", "_", clean_name)
-        if not clean_name.lower().endswith(".pdf"):
-            clean_name += ".pdf"
-        stored_filename = f"{doc_id}_{clean_name}"
+        path_obj = Path(original_filename)
+        ext = path_obj.suffix.lower()
+        clean_stem = re.sub(r"[^a-zA-Z0-9_\-]", "_", path_obj.stem)
+        stored_filename = f"{doc_id}_{clean_stem}{ext}"
         return doc_id, stored_filename
 
     def _resolve_file_path(self, relative_path: Path, base_dir: Path) -> Path:
@@ -55,67 +53,73 @@ class DocumentProcessor:
             raise ValueError("Potential path traversal detected.")
         return resolved
 
-    def validate_pdf_content(self, file_bytes: bytes, filename: str) -> Tuple[bool, Optional[str]]:
-        """Validates filename extension, magic bytes, and basic PDF structure."""
-        if not filename.lower().endswith(".pdf"):
-            return False, "Invalid file extension. Only .pdf files are supported."
-
+    def validate_file_content(self, file_bytes: bytes, filename: str) -> Tuple[bool, Optional[str]]:
+        """Validates filename extension, file size, and format magic bytes/json structure."""
         if len(file_bytes) == 0:
             return False, "Uploaded file is empty."
 
         if len(file_bytes) > settings.max_file_size_bytes:
             return False, f"File size exceeds the maximum limit of {settings.MAX_FILE_SIZE_MB}MB."
 
-        # Verify PDF magic bytes '%PDF-' at the beginning of the file
-        if not file_bytes.startswith(b"%PDF-"):
+        try:
+            file_type = get_file_type(filename)
+        except ValueError as val_err:
+            return False, str(val_err)
+
+        # PDF magic bytes check
+        if file_type == "pdf" and not file_bytes.startswith(b"%PDF-"):
             return False, "Invalid file format. File does not match PDF specification header."
+
+        # JSON syntax check
+        if file_type == "json":
+            try:
+                json.loads(file_bytes.decode("utf-8", errors="ignore"))
+            except Exception:
+                return False, "Unable to process this JSON file because the file format is invalid."
 
         return True, None
 
     def save_uploaded_pdf(self, file_bytes: bytes, original_filename: str) -> DocumentMetadata:
-        """Validates and saves uploaded PDF bytes to the uploads directory."""
-        is_valid, error = self.validate_pdf_content(file_bytes, original_filename)
+        """Validates and saves uploaded document bytes to disk."""
+        is_valid, error = self.validate_file_content(file_bytes, original_filename)
         if not is_valid:
             raise ValueError(error)
 
         doc_id, stored_filename = self._get_safe_stored_filename(original_filename)
         target_path = self._resolve_file_path(Path(stored_filename), self.uploads_dir)
 
-        # Write file to disk
         with open(target_path, "wb") as f:
             f.write(file_bytes)
 
+        file_type = get_file_type(original_filename)
         metadata = DocumentMetadata(
             document_id=doc_id,
             filename=Path(original_filename).name,
             stored_filename=stored_filename,
             file_size=len(file_bytes),
             upload_timestamp=datetime.now(timezone.utc).isoformat(),
+            file_type=file_type,
             pages=None,
             status="uploaded",
-            error_message=None
+            error_message=None,
         )
 
         metadata_manager.save(metadata)
-        logger.info(f"Successfully uploaded document: id={doc_id}, size={len(file_bytes)} bytes")
+        logger.info(f"Successfully uploaded document: id={doc_id}, type={file_type}, size={len(file_bytes)} bytes")
         return metadata
 
     def clean_text(self, raw_text: str) -> str:
-        """Cleans extracted page text by normalizing whitespace, removing nulls, etc."""
         if not raw_text:
             return ""
-        # Remove null characters and non-printable control characters (except newline, tab, return)
         cleaned = re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]", "", raw_text)
-        # Normalize multiple horizontal spaces to single space
         cleaned = re.sub(r"[ \t]+", " ", cleaned)
-        # Normalize excessive newlines to double newline
         cleaned = re.sub(r"\n\s*\n\s*\n+", "\n\n", cleaned)
         return cleaned.strip()
 
     def process_pdf(self, document_id: str) -> ExtractedDocument:
         """
-        Extracts text from the PDF page-by-page, preserving page numbers and metadata.
-        Stores the intermediate representation in the extracted directory.
+        Parses document using appropriate format parser (PDF, DOCX, TXT, CSV, JSON, MD).
+        Persists extracted JSON in extracted/ directory and updates status to processed.
         """
         metadata = metadata_manager.get_by_id(document_id)
         if not metadata:
@@ -123,46 +127,18 @@ class DocumentProcessor:
 
         file_path = self._resolve_file_path(Path(metadata.stored_filename), self.uploads_dir)
         if not file_path.exists():
-            metadata_manager.update_status(document_id, "failed", error_message="Source PDF file missing on disk.")
-            raise FileNotFoundError("Source PDF file does not exist on disk.")
+            metadata_manager.update_status(document_id, "failed", error_message="Source file missing on disk.")
+            raise FileNotFoundError("Source document file does not exist on disk.")
 
-        # Update status to processing
         metadata_manager.update_status(document_id, "processing")
 
-        extracted_pages: List[ExtractedPage] = []
         try:
-            reader = PdfReader(str(file_path))
-            total_pages = len(reader.pages)
+            with open(file_path, "rb") as f:
+                file_bytes = f.read()
 
-            for page_idx, page in enumerate(reader.pages):
-                page_num = page_idx + 1
-                try:
-                    raw_text = page.extract_text() or ""
-                except Exception as e:
-                    logger.warning(f"Error extracting text from page {page_num} of doc {document_id}: {str(e)}")
-                    raw_text = ""
+            parser = get_parser(metadata.filename)
+            extracted_doc = parser.parse(file_bytes, metadata.filename, document_id)
 
-                cleaned = self.clean_text(raw_text)
-
-                extracted_pages.append(
-                    ExtractedPage(
-                        document_id=document_id,
-                        filename=metadata.filename,
-                        page=page_num,
-                        text=cleaned,
-                        char_count=len(cleaned)
-                    )
-                )
-
-            extracted_doc = ExtractedDocument(
-                document_id=document_id,
-                filename=metadata.filename,
-                total_pages=total_pages,
-                extracted_at=datetime.now(timezone.utc).isoformat(),
-                pages=extracted_pages
-            )
-
-            # Persist intermediate representation JSON
             extracted_file_path = self._resolve_file_path(
                 Path(f"{document_id}.json"),
                 self.extracted_dir
@@ -170,19 +146,18 @@ class DocumentProcessor:
             with open(extracted_file_path, "w", encoding="utf-8") as f:
                 f.write(extracted_doc.model_dump_json(indent=2))
 
-            # Update status to processed
             metadata_manager.update_status(
                 document_id=document_id,
                 status="processed",
-                pages=total_pages,
+                pages=extracted_doc.total_pages,
                 error_message=None
             )
 
-            logger.info(f"Successfully processed document: id={document_id}, pages={total_pages}")
+            logger.info(f"Successfully processed document: id={document_id}, sections={extracted_doc.total_pages}")
             return extracted_doc
 
-        except (PyPdfError, Exception) as exc:
-            error_msg = f"Failed to extract PDF text: {str(exc)}"
+        except Exception as exc:
+            error_msg = f"Failed to extract document content: {str(exc)}"
             logger.error(f"Processing error for document {document_id}: {error_msg}")
             metadata_manager.update_status(
                 document_id=document_id,

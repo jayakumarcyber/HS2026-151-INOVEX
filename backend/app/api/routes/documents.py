@@ -10,6 +10,7 @@ from app.schemas.document import (
 )
 from app.services.document_processor import document_processor
 from app.services.metadata_manager import metadata_manager
+from app.services.parsers import get_file_type
 
 router = APIRouter(prefix="/api/documents", tags=["Documents"])
 
@@ -18,17 +19,20 @@ router = APIRouter(prefix="/api/documents", tags=["Documents"])
     "/upload",
     response_model=DocumentUploadResponse,
     status_code=status.HTTP_201_CREATED,
-    summary="Upload PDF document",
+    summary="Upload knowledge document (PDF, DOCX, TXT, CSV, JSON, Markdown)",
 )
 async def upload_document(file: UploadFile = File(...)) -> DocumentUploadResponse:
     """
-    Accepts and validates a PDF document upload, storing it with a safe identifier.
+    Accepts and validates a knowledge document upload (PDF, DOCX, TXT, CSV, JSON, Markdown), storing it safely.
     """
     filename = file.filename or "document.pdf"
-    if not filename.lower().endswith(".pdf"):
+
+    try:
+        get_file_type(filename)
+    except ValueError as val_err:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid file type. Only PDF documents (.pdf) are supported.",
+            detail=str(val_err),
         )
 
     try:
@@ -66,13 +70,13 @@ async def list_documents() -> DocumentListResponse:
     Retrieves metadata for all uploaded documents. Document contents are never exposed in this endpoint.
     """
     records = metadata_manager.get_all()
-    # Convert to DocumentSummary to strictly ensure internal filepaths are not exposed
     summaries = [
         DocumentSummary(
             document_id=doc.document_id,
             filename=doc.filename,
             file_size=doc.file_size,
             upload_timestamp=doc.upload_timestamp,
+            file_type=doc.file_type or get_file_type(doc.filename),
             pages=doc.pages,
             status=doc.status,
         )
@@ -101,6 +105,7 @@ async def get_document_metadata(document_id: str) -> DocumentSummary:
         filename=doc.filename,
         file_size=doc.file_size,
         upload_timestamp=doc.upload_timestamp,
+        file_type=doc.file_type or get_file_type(doc.filename),
         pages=doc.pages,
         status=doc.status,
     )
@@ -109,11 +114,11 @@ async def get_document_metadata(document_id: str) -> DocumentSummary:
 @router.post(
     "/{document_id}/process",
     response_model=DocumentProcessResponse,
-    summary="Extract text and process PDF",
+    summary="Extract text and process document",
 )
 async def process_document(document_id: str) -> DocumentProcessResponse:
     """
-    Extracts page-by-page text from the uploaded PDF, preserving page structure and metadata.
+    Extracts text/sections from the uploaded document, preserving page/row/section structure and metadata.
     """
     doc = metadata_manager.get_by_id(document_id)
     if not doc:
@@ -136,7 +141,7 @@ async def process_document(document_id: str) -> DocumentProcessResponse:
             document_id=document_id,
             status="processed",
             pages=extracted.total_pages,
-            message=f"Successfully extracted {extracted.total_pages} pages.",
+            message=f"Successfully extracted {extracted.total_pages} sections.",
         )
     except FileNotFoundError as fnf_err:
         raise HTTPException(
@@ -170,11 +175,11 @@ async def delete_document(document_id: str):
             detail=f"Document with ID {document_id} not found.",
         )
 
-    # Delete source PDF if exists
+    # Delete source file if exists
     try:
-        pdf_path = document_processor.uploads_dir / doc.stored_filename
-        if pdf_path.exists():
-            pdf_path.unlink()
+        src_path = document_processor.uploads_dir / doc.stored_filename
+        if src_path.exists():
+            src_path.unlink()
     except Exception:
         pass
 
@@ -196,4 +201,3 @@ async def delete_document(document_id: str):
         pass
 
     return {"success": True, "message": "Document deleted successfully."}
-
