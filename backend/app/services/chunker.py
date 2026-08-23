@@ -30,7 +30,7 @@ class TextChunker:
                 text=cleaned_text,
                 document_id=doc.document_id,
                 document_name=doc.filename,
-                page_number=page.page_number,
+                page_number=page.page,
             )
             all_chunks.extend(page_chunks)
 

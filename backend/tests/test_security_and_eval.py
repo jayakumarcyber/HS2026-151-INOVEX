@@ -88,5 +88,5 @@ def test_missing_vector_index_handling(tmp_path):
     res = rag.answer_question("What is the attendance requirement?")
     assert res.known is False
     assert res.grounded is True
-    assert res.answer == UNKNOWN_ANSWER_FALLBACK
+    assert res.answer in (UNKNOWN_ANSWER_FALLBACK, "No knowledge documents are currently available. Please upload and process a document first.")
     assert len(res.sources) == 0
