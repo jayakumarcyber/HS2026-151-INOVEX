@@ -15,6 +15,7 @@ async def ask_question(request: AskRequest) -> AskResponse:
     """
     Executes grounded RAG question answering using vector retrieval and Gemini LLM.
     Returns source citations for known facts and strict refusal fallback for ungrounded queries.
+    Supports language switching ('en' | 'ta') and document summarization requests.
     """
     if not request.question or not request.question.strip():
         raise HTTPException(
@@ -29,7 +30,11 @@ async def ask_question(request: AskRequest) -> AskResponse:
         )
 
     try:
-        response = rag_service.answer_question(request.question)
+        response = rag_service.answer_question(
+            question=request.question,
+            language=request.language or "en",
+            is_summary=request.is_summary or False,
+        )
         return response
     except Exception as exc:
         # Never expose internal stack traces or API keys
@@ -37,5 +42,6 @@ async def ask_question(request: AskRequest) -> AskResponse:
             answer=ERROR_ANSWER_FALLBACK,
             known=False,
             grounded=True,
+            response_type="ERROR",
             sources=[],
         )

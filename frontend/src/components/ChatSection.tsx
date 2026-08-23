@@ -4,13 +4,16 @@ import {
   Sparkles,
   Send,
   Loader2,
-  HelpCircle,
   FileText,
   Trash2,
   AlertCircle,
   CheckCircle2,
   AlertTriangle,
   Bot,
+  Globe,
+  FileSpreadsheet,
+  HelpCircle,
+  BookOpen,
 } from 'lucide-react';
 import { ChatMessage } from '../types';
 import { apiService } from '../services/api';
@@ -18,25 +21,34 @@ import { apiService } from '../services/api';
 export const ChatSection: React.FC = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputQuery, setInputQuery] = useState('');
+  const [language, setLanguage] = useState<'en' | 'ta'>('en');
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const chatBottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isLoading]);
 
-  const handleSendMessage = async (queryOverride?: string) => {
-    const query = (queryOverride || inputQuery).trim();
-    if (!query || isLoading) return;
+  const handleSendMessage = async (customQuery?: string, isSummary: boolean = false) => {
+    const query = (customQuery || inputQuery).trim();
+    if (!query && !isSummary) return;
+    if (isLoading) return;
 
     setErrorMsg(null);
     setInputQuery('');
 
+    const displayQuestion = isSummary
+      ? language === 'ta'
+        ? '📄 ஆவணத்தைச் சுருக்கவும் (Summarize Document)'
+        : '📄 Summarize Document'
+      : query;
+
     const userMsg: ChatMessage = {
       id: `user-${Date.now()}`,
       sender: 'user',
-      text: query,
+      text: displayQuestion,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     };
 
@@ -44,7 +56,11 @@ export const ChatSection: React.FC = () => {
     setIsLoading(true);
 
     try {
-      const response = await apiService.askQuestion({ question: query });
+      const response = await apiService.askQuestion({
+        question: displayQuestion,
+        language: language,
+        is_summary: isSummary,
+      });
 
       const assistantMsg: ChatMessage = {
         id: `assistant-${Date.now()}`,
@@ -52,12 +68,13 @@ export const ChatSection: React.FC = () => {
         text: response.answer,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         known: response.known,
+        response_type: response.response_type || (response.known ? 'DOCUMENT_ANSWER' : 'UNKNOWN_DOCUMENT'),
         citations: response.sources,
       };
 
       setMessages((prev) => [...prev, assistantMsg]);
     } catch (err: any) {
-      setErrorMsg(err.response?.data?.detail || 'Unable to generate an answer.');
+      setErrorMsg(err.response?.data?.detail || 'Unable to process your message.');
     } finally {
       setIsLoading(false);
     }
@@ -68,11 +85,33 @@ export const ChatSection: React.FC = () => {
     setErrorMsg(null);
   };
 
-  const quickPrompts = [
-    'What is the minimum attendance requirement?',
-    'How many books can a student borrow?',
-    'Are mobile phones allowed in the examination hall?',
-  ];
+  const handleActionClick = (actionType: 'summarize' | 'tamil' | 'english' | 'ask') => {
+    if (actionType === 'summarize') {
+      handleSendMessage('Summarize Document', true);
+    } else if (actionType === 'tamil') {
+      setLanguage('ta');
+      const sysMsg: ChatMessage = {
+        id: `sys-${Date.now()}`,
+        sender: 'assistant',
+        text: '🌐 பதில் மொழி தமிழுக்கு மாற்றப்பட்டது. (Response language set to Tamil)',
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        response_type: 'NORMAL',
+      };
+      setMessages((prev) => [...prev, sysMsg]);
+    } else if (actionType === 'english') {
+      setLanguage('en');
+      const sysMsg: ChatMessage = {
+        id: `sys-${Date.now()}`,
+        sender: 'assistant',
+        text: '🇬🇧 Response language set to English.',
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        response_type: 'NORMAL',
+      };
+      setMessages((prev) => [...prev, sysMsg]);
+    } else if (actionType === 'ask') {
+      inputRef.current?.focus();
+    }
+  };
 
   return (
     <div className="glass-panel rounded-2xl p-6 flex flex-col h-full border border-emerald-500/15 relative">
@@ -81,13 +120,19 @@ export const ChatSection: React.FC = () => {
         <div>
           <h2 className="text-base font-semibold text-white flex items-center gap-2">
             <MessageSquare className="w-4 h-4 text-emerald-400" />
-            Grounded Knowledge Assistant
+            AI Knowledge Assistant
           </h2>
           <p className="text-xs text-slate-400 mt-0.5">
-            Answers generated only from your indexed documents.
+            Natural Chat &bull; Document Grounding &bull; Multilingual Tools
           </p>
         </div>
         <div className="flex items-center gap-2">
+          {/* Active Language Badge */}
+          <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-dark-900 border border-emerald-500/25 text-slate-200 text-xs font-semibold">
+            <Globe className="w-3.5 h-3.5 text-emerald-400" />
+            <span>{language === 'ta' ? '🌐 Tamil Active' : '🇬🇧 English Active'}</span>
+          </div>
+
           {messages.length > 0 && (
             <button
               onClick={handleClearChat}
@@ -97,14 +142,50 @@ export const ChatSection: React.FC = () => {
               <Trash2 className="w-4 h-4" />
             </button>
           )}
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-emerald-300 text-xs font-semibold">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-            </span>
-            <span>Grounding Active</span>
-          </div>
         </div>
+      </div>
+
+      {/* General Quick Action Bar */}
+      <div className="py-3 border-b border-emerald-500/10 flex items-center gap-2 overflow-x-auto no-scrollbar">
+        <button
+          onClick={() => handleActionClick('summarize')}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-dark-900/90 hover:bg-emerald-950/40 border border-emerald-500/20 hover:border-emerald-400 text-xs font-medium text-slate-200 hover:text-emerald-300 transition-all shadow-sm hover:shadow-emerald-500/10 whitespace-nowrap"
+        >
+          <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-400" />
+          <span>📄 Summarize Document</span>
+        </button>
+
+        <button
+          onClick={() => handleActionClick('tamil')}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-medium transition-all shadow-sm whitespace-nowrap ${
+            language === 'ta'
+              ? 'bg-emerald-500/20 border-emerald-400 text-emerald-300 font-semibold'
+              : 'bg-dark-900/90 hover:bg-emerald-950/40 border-emerald-500/20 hover:border-emerald-400 text-slate-200 hover:text-emerald-300'
+          }`}
+        >
+          <Globe className="w-3.5 h-3.5 text-emerald-400" />
+          <span>🌐 Tamil</span>
+        </button>
+
+        <button
+          onClick={() => handleActionClick('english')}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-medium transition-all shadow-sm whitespace-nowrap ${
+            language === 'en'
+              ? 'bg-emerald-500/20 border-emerald-400 text-emerald-300 font-semibold'
+              : 'bg-dark-900/90 hover:bg-emerald-950/40 border-emerald-500/20 hover:border-emerald-400 text-slate-200 hover:text-emerald-300'
+          }`}
+        >
+          <BookOpen className="w-3.5 h-3.5 text-emerald-400" />
+          <span>🇬🇧 English</span>
+        </button>
+
+        <button
+          onClick={() => handleActionClick('ask')}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-dark-900/90 hover:bg-emerald-950/40 border border-emerald-500/20 hover:border-emerald-400 text-xs font-medium text-slate-200 hover:text-emerald-300 transition-all shadow-sm hover:shadow-emerald-500/10 whitespace-nowrap"
+        >
+          <HelpCircle className="w-3.5 h-3.5 text-emerald-400" />
+          <span>💡 Ask About Document</span>
+        </button>
       </div>
 
       {/* Main Conversation Feed */}
@@ -115,27 +196,11 @@ export const ChatSection: React.FC = () => {
               <Sparkles className="w-7 h-7" />
             </div>
             <h3 className="text-sm font-bold text-white">
-              Ask your first question
+              AI Knowledge Assistant Active
             </h3>
             <p className="text-xs text-slate-400 max-w-md mt-1 leading-relaxed">
-              Get answers grounded in your provided documents. Missing facts trigger explicit refusal fallbacks.
+              Ask any question in English, Tamil, or Tanglish. Use general tools to summarize documents or switch language preferences.
             </p>
-
-            {/* Quick Suggestion Pills */}
-            <div className="mt-5 grid grid-cols-1 gap-2 w-full max-w-lg">
-              {quickPrompts.map((prompt, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => handleSendMessage(prompt)}
-                  className="p-2.5 rounded-xl bg-dark-900/80 hover:bg-dark-850 border border-emerald-500/15 hover:border-emerald-500/40 text-left transition-all group shadow-sm hover:shadow-emerald-500/10"
-                >
-                  <p className="text-xs font-medium text-slate-300 group-hover:text-emerald-300 transition-colors flex items-center gap-1.5">
-                    <HelpCircle className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
-                    <span className="truncate">&quot;{prompt}&quot;</span>
-                  </p>
-                </button>
-              ))}
-            </div>
           </div>
         ) : (
           messages.map((msg) => (
@@ -147,7 +212,11 @@ export const ChatSection: React.FC = () => {
                 className={`max-w-[85%] rounded-2xl p-4 text-xs leading-relaxed ${
                   msg.sender === 'user'
                     ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-br-none shadow-lg shadow-emerald-600/10'
-                    : msg.known === false
+                    : msg.response_type === 'NORMAL'
+                    ? 'bg-dark-900/90 border border-emerald-500/20 text-slate-200 rounded-bl-none'
+                    : msg.response_type === 'SUMMARY'
+                    ? 'bg-emerald-950/30 border border-emerald-500/30 text-emerald-100 rounded-bl-none shadow-md'
+                    : msg.response_type === 'NO_DOCUMENT' || msg.response_type === 'UNKNOWN_DOCUMENT'
                     ? 'bg-amber-950/20 border border-amber-500/30 text-amber-200 rounded-bl-none'
                     : 'glass-card bg-dark-900/90 border border-emerald-500/20 text-slate-100 rounded-bl-none shadow-md'
                 }`}
@@ -157,9 +226,24 @@ export const ChatSection: React.FC = () => {
                   <div className="flex items-center gap-1.5 font-bold uppercase tracking-wider">
                     {msg.sender === 'user' ? (
                       <span>You</span>
-                    ) : msg.known === false ? (
+                    ) : msg.response_type === 'NORMAL' ? (
+                      <span className="flex items-center gap-1 text-slate-300 font-semibold">
+                        <Bot className="w-3 h-3 text-emerald-400" />
+                        CONVERSATIONAL
+                      </span>
+                    ) : msg.response_type === 'SUMMARY' ? (
+                      <span className="flex items-center gap-1 text-emerald-300 font-semibold">
+                        <FileSpreadsheet className="w-3 h-3 text-emerald-400" />
+                        DOCUMENT SUMMARY
+                      </span>
+                    ) : msg.response_type === 'NO_DOCUMENT' ? (
                       <span className="flex items-center gap-1 text-amber-400 font-semibold">
-                        <AlertTriangle className="w-3 h-3" />
+                        <AlertTriangle className="w-3 h-3 text-amber-400" />
+                        NO DOCUMENTS
+                      </span>
+                    ) : msg.known === false || msg.response_type === 'UNKNOWN_DOCUMENT' ? (
+                      <span className="flex items-center gap-1 text-amber-400 font-semibold">
+                        <AlertTriangle className="w-3 h-3 text-amber-400" />
                         INFORMATION NOT FOUND
                       </span>
                     ) : (
@@ -209,7 +293,7 @@ export const ChatSection: React.FC = () => {
         {isLoading && (
           <div className="flex items-center gap-2.5 text-xs text-emerald-400 bg-emerald-950/30 border border-emerald-500/20 px-4 py-3 rounded-2xl w-fit animate-pulse">
             <Loader2 className="w-4 h-4 animate-spin text-emerald-400" />
-            <span>Retrieving evidence... Generating grounded answer...</span>
+            <span>Processing request... Generating grounded response...</span>
           </div>
         )}
 
@@ -225,21 +309,6 @@ export const ChatSection: React.FC = () => {
 
       {/* Input Bar */}
       <div className="mt-auto pt-4 border-t border-emerald-500/15">
-        {/* Quick Chip Row */}
-        {messages.length > 0 && (
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-2 mb-1 no-scrollbar">
-            {quickPrompts.map((prompt, idx) => (
-              <button
-                key={idx}
-                onClick={() => handleSendMessage(prompt)}
-                className="px-2.5 py-1 rounded-full bg-dark-900 border border-emerald-500/15 hover:border-emerald-500/40 text-[10px] font-medium text-slate-300 hover:text-emerald-300 whitespace-nowrap transition-all"
-              >
-                &quot;{prompt}&quot;
-              </button>
-            ))}
-          </div>
-        )}
-
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -248,6 +317,7 @@ export const ChatSection: React.FC = () => {
           className="relative flex items-center"
         >
           <input
+            ref={inputRef}
             type="text"
             value={inputQuery}
             onChange={(e) => setInputQuery(e.target.value)}
@@ -263,7 +333,7 @@ export const ChatSection: React.FC = () => {
           </button>
         </form>
         <div className="flex items-center justify-between mt-2.5 px-1 text-[11px] text-slate-400">
-          <span>Grounding: Strict document context ONLY</span>
+          <span>Grounding: Document Context &bull; English / Tamil / Tanglish</span>
           <span className="text-emerald-400 font-semibold flex items-center gap-1">
             <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
             Zero-Hallucination Guard active

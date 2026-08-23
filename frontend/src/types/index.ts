@@ -92,12 +92,15 @@ export interface SourceCitation {
 
 export interface AskRequest {
   question: string;
+  language?: string;
+  is_summary?: boolean;
 }
 
 export interface AskResponse {
   answer: string;
   known: boolean;
   grounded: boolean;
+  response_type?: string;
   sources: SourceCitation[];
 }
 
@@ -107,5 +110,6 @@ export interface ChatMessage {
   text: string;
   timestamp: string;
   known?: boolean;
+  response_type?: string;
   citations?: SourceCitation[];
 }
