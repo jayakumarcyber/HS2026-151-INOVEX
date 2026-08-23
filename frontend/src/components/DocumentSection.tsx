@@ -53,7 +53,7 @@ export const DocumentSection: React.FC<DocumentSectionProps> = ({
 
   const handleFileUpload = async (file: File) => {
     if (!file.name.toLowerCase().endsWith('.pdf')) {
-      setErrorMessage('Only PDF documents (.pdf) are supported in Phase 2.');
+      setErrorMessage('Only PDF documents (.pdf) are supported.');
       setSuccessMessage(null);
       return;
     }
@@ -143,12 +143,12 @@ export const DocumentSection: React.FC<DocumentSectionProps> = ({
   };
 
   return (
-    <div className="glass-panel rounded-2xl p-6 flex flex-col h-full border border-slate-800">
+    <div className="glass-panel rounded-2xl p-6 flex flex-col h-full border border-emerald-500/15">
       {/* Header */}
-      <div className="flex items-center justify-between pb-4 border-b border-slate-800/80">
+      <div className="flex items-center justify-between pb-4 border-b border-emerald-500/15">
         <div>
-          <h2 className="text-base font-semibold text-slate-100 flex items-center gap-2">
-            <FileText className="w-4 h-4 text-indigo-400" />
+          <h2 className="text-base font-semibold text-white flex items-center gap-2">
+            <FileText className="w-4 h-4 text-emerald-400" />
             Knowledge Repository
           </h2>
           <p className="text-xs text-slate-400 mt-0.5">
@@ -156,13 +156,13 @@ export const DocumentSection: React.FC<DocumentSectionProps> = ({
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <span className="px-2.5 py-1 rounded text-xs font-semibold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+          <span className="px-2.5 py-1 rounded text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
             {documents.length} {documents.length === 1 ? 'Document' : 'Documents'}
           </span>
           <button
             onClick={onRefresh}
             title="Refresh documents"
-            className="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-slate-800/80 rounded-lg transition-colors border border-slate-800"
+            className="p-1.5 text-slate-400 hover:text-emerald-300 hover:bg-emerald-500/10 rounded-lg transition-colors border border-emerald-500/15"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
           </button>
@@ -209,10 +209,10 @@ export const DocumentSection: React.FC<DocumentSectionProps> = ({
         onDragLeave={() => setDragOver(false)}
         onDrop={handleDrop}
         onClick={() => fileInputRef.current?.click()}
-        className={`mt-4 border-2 border-dashed rounded-xl p-5 flex flex-col items-center justify-center text-center transition-all cursor-pointer ${
+        className={`mt-4 border-2 border-dashed rounded-xl p-5 flex flex-col items-center justify-center text-center transition-all duration-300 cursor-pointer group ${
           dragOver
-            ? 'border-indigo-500 bg-indigo-500/10'
-            : 'border-slate-800 hover:border-slate-700 bg-slate-900/40 hover:bg-slate-900/70'
+            ? 'border-emerald-400 bg-emerald-500/10 shadow-lg shadow-emerald-500/10'
+            : 'border-emerald-500/20 hover:border-emerald-400/50 bg-dark-900/60 hover:bg-dark-850'
         }`}
       >
         <input
@@ -224,20 +224,23 @@ export const DocumentSection: React.FC<DocumentSectionProps> = ({
           disabled={isUploading}
         />
 
-        <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-400 mb-2">
+        <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 mb-2.5 group-hover:-translate-y-1 transition-transform duration-300">
           {isUploading ? (
-            <RefreshCw className="w-5 h-5 animate-spin" />
+            <RefreshCw className="w-6 h-6 animate-spin text-emerald-400" />
           ) : (
-            <UploadCloud className="w-5 h-5" />
+            <UploadCloud className="w-6 h-6 text-emerald-400" />
           )}
         </div>
 
-        <h3 className="text-xs font-semibold text-slate-200">
-          {isUploading ? 'Uploading PDF Document...' : 'Upload Knowledge PDF'}
+        <h3 className="text-xs font-bold text-white">
+          {isUploading ? 'Uploading Knowledge PDF...' : 'Upload Knowledge Document'}
         </h3>
-        <p className="text-[11px] text-slate-400 mt-0.5">
-          Drag &amp; drop or browse &bull; Max 20MB &bull; PDF only
+        <p className="text-[11px] text-slate-400 mt-1">
+          Drag &amp; drop your PDF here or browse files
         </p>
+        <span className="mt-2 text-[10px] px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/15">
+          Maximum 20 MB &bull; PDF only
+        </span>
       </div>
 
       {/* Document List */}
@@ -249,13 +252,13 @@ export const DocumentSection: React.FC<DocumentSectionProps> = ({
         </div>
 
         {documents.length === 0 ? (
-          <div className="flex-1 flex flex-col items-center justify-center text-center p-6 rounded-xl bg-slate-900/30 border border-slate-800/60 my-auto">
-            <div className="p-3 rounded-full bg-slate-800/80 text-slate-400 mb-2">
+          <div className="flex-1 flex flex-col items-center justify-center text-center p-6 rounded-xl bg-dark-900/40 border border-emerald-500/10 my-auto">
+            <div className="p-3.5 rounded-2xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 mb-3">
               <FileText className="w-6 h-6" />
             </div>
-            <p className="text-xs font-medium text-slate-300">No Documents Uploaded</p>
-            <p className="text-[11px] text-slate-400 max-w-xs mt-1">
-              Upload your PDF documents above to extract text and prepare for knowledge grounding.
+            <p className="text-xs font-semibold text-slate-200">No knowledge documents yet</p>
+            <p className="text-[11px] text-slate-400 max-w-xs mt-1 leading-relaxed">
+              Upload a PDF to create your grounded knowledge base.
             </p>
           </div>
         ) : (
@@ -267,22 +270,22 @@ export const DocumentSection: React.FC<DocumentSectionProps> = ({
               return (
                 <div
                   key={doc.document_id}
-                  className="p-3.5 rounded-xl bg-slate-900/60 border border-slate-800/80 hover:border-slate-700/80 transition-all flex flex-col gap-2.5"
+                  className="p-3.5 rounded-xl bg-dark-900/70 border border-emerald-500/15 hover:border-emerald-500/30 transition-all flex flex-col gap-2.5 group"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-start gap-2.5 min-w-0">
-                      <div className="p-2 rounded-lg bg-indigo-500/10 text-indigo-400 flex-shrink-0 mt-0.5">
+                      <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-400 flex-shrink-0 mt-0.5 border border-emerald-500/20">
                         <FileText className="w-4 h-4" />
                       </div>
                       <div className="min-w-0">
-                        <p className="text-xs font-semibold text-slate-200 truncate" title={doc.filename}>
+                        <p className="text-xs font-semibold text-white truncate" title={doc.filename}>
                           {doc.filename}
                         </p>
                         <div className="flex items-center gap-2 text-[11px] text-slate-400 mt-0.5">
                           <span>{formatFileSize(doc.file_size)}</span>
                           <span>&bull;</span>
                           <span className="flex items-center gap-1">
-                            <Clock className="w-3 h-3" />
+                            <Clock className="w-3 h-3 text-slate-400" />
                             {formatDate(doc.upload_timestamp)}
                           </span>
                         </div>
@@ -297,14 +300,14 @@ export const DocumentSection: React.FC<DocumentSectionProps> = ({
                         </span>
                       )}
                       {doc.status === 'processing' && (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                           <RefreshCw className="w-2.5 h-2.5 animate-spin" />
                           Processing
                         </span>
                       )}
                       {doc.status === 'processed' && (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                          <FileCheck className="w-2.5 h-2.5" />
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                          <FileCheck className="w-2.5 h-2.5 text-emerald-400" />
                           {doc.pages} {doc.pages === 1 ? 'Page' : 'Pages'}
                         </span>
                       )}
@@ -317,12 +320,19 @@ export const DocumentSection: React.FC<DocumentSectionProps> = ({
                     </div>
                   </div>
 
+                  {/* Processing Progress Animation Bar */}
+                  {isProcessingThis && (
+                    <div className="w-full bg-dark-800 rounded-full h-1.5 overflow-hidden border border-emerald-500/20">
+                      <div className="bg-gradient-to-r from-emerald-500 to-teal-300 h-full animate-pulse rounded-full w-3/4"></div>
+                    </div>
+                  )}
+
                   {/* Actions & Metadata Bar */}
-                  <div className="flex items-center justify-between pt-2 border-t border-slate-800/60 text-xs">
+                  <div className="flex items-center justify-between pt-2 border-t border-emerald-500/10 text-xs">
                     <div className="text-[11px] text-slate-400 flex items-center gap-1">
                       {doc.status === 'processed' ? (
                         <span className="text-emerald-400/90 flex items-center gap-1">
-                          <Layers className="w-3 h-3" /> Ready for Phase 3 Chunking
+                          <Layers className="w-3 h-3 text-emerald-400" /> Grounding Indexed
                         </span>
                       ) : (
                         <span>Awaiting text extraction</span>
@@ -334,7 +344,7 @@ export const DocumentSection: React.FC<DocumentSectionProps> = ({
                         <button
                           onClick={() => handleProcessDocument(doc.document_id)}
                           disabled={isProcessingThis || isDeletingThis}
-                          className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-indigo-600 hover:bg-indigo-500 text-white transition-colors disabled:opacity-50"
+                          className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-emerald-600 hover:bg-emerald-500 text-white transition-colors disabled:opacity-50 shadow-sm shadow-emerald-500/20"
                         >
                           {isProcessingThis ? (
                             <>

@@ -62,9 +62,14 @@ export const App: React.FC = () => {
   }, [checkBackendHealth]);
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col selection:bg-indigo-500/30 selection:text-indigo-200">
+    <div className="min-h-screen bg-dark-950 text-slate-100 flex flex-col relative selection:bg-emerald-500/30 selection:text-emerald-200 bg-grid-pattern">
+      {/* Background Radial Ambient Glow */}
+      <div className="fixed top-0 left-1/4 w-[600px] h-[600px] bg-emerald-500/5 rounded-full blur-[140px] pointer-events-none" />
+      <div className="fixed bottom-0 right-1/4 w-[500px] h-[500px] bg-teal-500/5 rounded-full blur-[120px] pointer-events-none" />
+
       <Header health={health} onRefreshHealth={checkBackendHealth} />
-      <div className="flex-1">
+
+      <div className="flex-1 relative z-10">
         <Dashboard
           health={health}
           documents={documents}
@@ -72,8 +77,9 @@ export const App: React.FC = () => {
           onRefreshDocuments={fetchDocuments}
         />
       </div>
-      <footer className="border-t border-slate-800/60 py-4 text-center text-xs text-slate-400">
-        <p>AI Powered Knowledge Assistant &bull; Repository: HS2026-151-INOVEX &bull; Phase 2 Ingestion</p>
+
+      <footer className="border-t border-emerald-500/10 py-4 text-center text-xs text-slate-400 relative z-10 bg-dark-950/80 backdrop-blur-md">
+        <p>AI Powered Knowledge Assistant &bull; Repository: HS2026-151-INOVEX &bull; Grounded Document Intelligence</p>
       </footer>
     </div>
   );

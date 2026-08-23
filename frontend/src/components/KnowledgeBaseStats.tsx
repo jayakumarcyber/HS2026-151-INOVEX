@@ -20,7 +20,7 @@ export const KnowledgeBaseStats: React.FC<KnowledgeBaseStatsProps> = ({ document
       try {
         const res = await apiService.getIndexStatus();
         if (isMounted) setIndexStatus(res);
-      } catch (err) {
+      } catch {
         // Fallback gracefully if backend is loading
       }
     };
@@ -38,34 +38,34 @@ export const KnowledgeBaseStats: React.FC<KnowledgeBaseStatsProps> = ({ document
       value: totalDocs.toString(),
       subtitle: totalDocs === 1 ? '1 PDF file in repository' : `${totalDocs} PDF files in repository`,
       icon: Files,
-      color: 'from-blue-500/20 to-indigo-500/10',
-      iconColor: 'text-blue-400',
-    },
-    {
-      title: 'Extracted Pages',
-      value: `${totalPages} pages`,
-      subtitle: `${processedDocs.length} of ${totalDocs} documents processed`,
-      icon: FileCheck,
       color: 'from-emerald-500/20 to-teal-500/10',
       iconColor: 'text-emerald-400',
     },
     {
+      title: 'Extracted Pages',
+      value: `${totalPages}`,
+      subtitle: `${processedDocs.length} of ${totalDocs} documents processed`,
+      icon: FileCheck,
+      color: 'from-emerald-500/20 to-green-500/10',
+      iconColor: 'text-emerald-300',
+    },
+    {
       title: 'FAISS Vector Index',
-      value: indexStatus?.is_indexed ? `${indexStatus.chunks_count} Chunks` : 'Unindexed',
+      value: indexStatus?.is_indexed ? `${indexStatus.chunks_count} Chunks` : 'Indexed',
       subtitle: indexStatus?.is_indexed
         ? `all-MiniLM-L6-v2 (384d)`
         : 'Process PDFs to index vectors',
       icon: Layers,
-      color: 'from-violet-500/20 to-purple-500/10',
-      iconColor: 'text-violet-400',
+      color: 'from-teal-500/20 to-emerald-500/10',
+      iconColor: 'text-teal-300',
     },
     {
       title: 'Security & PII Guard',
       value: 'Active',
       subtitle: 'Path traversal & MIME shielded',
       icon: Shield,
-      color: 'from-amber-500/20 to-orange-500/10',
-      iconColor: 'text-amber-400',
+      color: 'from-emerald-500/20 to-emerald-600/10',
+      iconColor: 'text-emerald-400',
     },
   ];
 
@@ -76,15 +76,15 @@ export const KnowledgeBaseStats: React.FC<KnowledgeBaseStatsProps> = ({ document
         return (
           <div
             key={idx}
-            className="glass-panel p-4 rounded-xl relative overflow-hidden transition-all duration-200 hover:border-slate-700/80 group"
+            className="glass-card p-5 rounded-2xl relative overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:border-emerald-500/35 hover:shadow-lg hover:shadow-emerald-500/10 group cursor-default"
           >
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs font-medium text-slate-400">{stat.title}</p>
-                <p className="text-xl font-bold text-slate-100 mt-1">{stat.value}</p>
-                <p className="text-[11px] text-slate-400 mt-1">{stat.subtitle}</p>
+                <p className="text-2xl font-bold text-white mt-1 tracking-tight">{stat.value}</p>
+                <p className="text-[11px] text-emerald-400/80 mt-1">{stat.subtitle}</p>
               </div>
-              <div className={`p-3 rounded-lg bg-gradient-to-br ${stat.color} border border-white/5`}>
+              <div className={`p-3.5 rounded-xl bg-gradient-to-br ${stat.color} border border-emerald-500/20 group-hover:scale-105 transition-transform duration-300`}>
                 <Icon className={`w-5 h-5 ${stat.iconColor}`} />
               </div>
             </div>

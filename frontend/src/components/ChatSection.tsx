@@ -4,12 +4,13 @@ import {
   Sparkles,
   Send,
   Loader2,
-  BookOpen,
   HelpCircle,
   FileText,
   Trash2,
   AlertCircle,
-  ShieldCheck,
+  CheckCircle2,
+  AlertTriangle,
+  Bot,
 } from 'lucide-react';
 import { ChatMessage } from '../types';
 import { apiService } from '../services/api';
@@ -69,22 +70,22 @@ export const ChatSection: React.FC = () => {
 
   const quickPrompts = [
     'What is the minimum attendance requirement?',
-    'How many books can a student borrow?',
-    'Are mobile phones allowed in the examination hall?',
+    'How many books can I borrow?',
+    'Are mobile phones allowed in exams?',
     'What is the hostel fee?',
   ];
 
   return (
-    <div className="glass-panel rounded-2xl p-6 flex flex-col h-full border border-slate-800 relative">
+    <div className="glass-panel rounded-2xl p-6 flex flex-col h-full border border-emerald-500/15 relative">
       {/* Header */}
-      <div className="flex items-center justify-between pb-4 border-b border-slate-800/80">
+      <div className="flex items-center justify-between pb-4 border-b border-emerald-500/15">
         <div>
-          <h2 className="text-base font-semibold text-slate-100 flex items-center gap-2">
-            <MessageSquare className="w-4 h-4 text-indigo-400" />
+          <h2 className="text-base font-semibold text-white flex items-center gap-2">
+            <MessageSquare className="w-4 h-4 text-emerald-400" />
             Grounded Knowledge Assistant
           </h2>
           <p className="text-xs text-slate-400 mt-0.5">
-            Verified RAG question answering with strict document citations &amp; refusal fallback
+            Answers generated only from your indexed documents.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -92,14 +93,17 @@ export const ChatSection: React.FC = () => {
             <button
               onClick={handleClearChat}
               title="Clear Conversation"
-              className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-slate-200 transition-colors"
+              className="p-1.5 rounded-lg bg-dark-900 hover:bg-dark-850 text-slate-400 hover:text-rose-400 transition-colors border border-emerald-500/15"
             >
               <Trash2 className="w-4 h-4" />
             </button>
           )}
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-medium">
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>Phase 4 Active</span>
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-emerald-300 text-xs font-semibold">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            </span>
+            <span>Grounding Active</span>
           </div>
         </div>
       </div>
@@ -108,14 +112,14 @@ export const ChatSection: React.FC = () => {
       <div className="flex-1 overflow-y-auto py-4 space-y-4 min-h-[360px] max-h-[500px] pr-1">
         {messages.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-center my-8">
-            <div className="w-12 h-12 rounded-2xl bg-indigo-600/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 mb-3 shadow-inner">
-              <BookOpen className="w-6 h-6" />
+            <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 mb-3 shadow-inner glow-emerald">
+              <Sparkles className="w-7 h-7" />
             </div>
-            <h3 className="text-sm font-semibold text-slate-200">
-              Ask Grounded Questions
+            <h3 className="text-sm font-bold text-white">
+              Ask your first grounded question
             </h3>
             <p className="text-xs text-slate-400 max-w-md mt-1 leading-relaxed">
-              Answers are generated solely from your ingested PDF documents. If information is missing from the knowledge base, the assistant will explicitly respond with a refusal fallback.
+              Your answers will be generated only from indexed knowledge. Missing facts trigger explicit refusal fallbacks.
             </p>
 
             {/* Quick Suggestion Pills */}
@@ -124,10 +128,10 @@ export const ChatSection: React.FC = () => {
                 <button
                   key={idx}
                   onClick={() => handleSendMessage(prompt)}
-                  className="p-2.5 rounded-lg bg-slate-900/80 hover:bg-slate-800 border border-slate-800 hover:border-indigo-500/30 text-left transition-all group"
+                  className="p-2.5 rounded-xl bg-dark-900/80 hover:bg-dark-850 border border-emerald-500/15 hover:border-emerald-500/40 text-left transition-all group shadow-sm hover:shadow-emerald-500/10"
                 >
-                  <p className="text-xs font-medium text-slate-300 group-hover:text-indigo-300 transition-colors flex items-center gap-1.5">
-                    <HelpCircle className="w-3 h-3 text-indigo-400 flex-shrink-0" />
+                  <p className="text-xs font-medium text-slate-300 group-hover:text-emerald-300 transition-colors flex items-center gap-1.5">
+                    <HelpCircle className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
                     <span className="truncate">&quot;{prompt}&quot;</span>
                   </p>
                 </button>
@@ -138,44 +142,59 @@ export const ChatSection: React.FC = () => {
           messages.map((msg) => (
             <div
               key={msg.id}
-              className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}
+              className={`flex flex-col animate-message-entrance ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}
             >
               <div
                 className={`max-w-[85%] rounded-2xl p-4 text-xs leading-relaxed ${
                   msg.sender === 'user'
-                    ? 'bg-indigo-600 text-white rounded-br-none shadow-md'
+                    ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-br-none shadow-lg shadow-emerald-600/10'
                     : msg.known === false
                     ? 'bg-amber-950/20 border border-amber-500/30 text-amber-200 rounded-bl-none'
-                    : 'glass-panel bg-slate-900/90 border border-slate-800 text-slate-200 rounded-bl-none'
+                    : 'glass-card bg-dark-900/90 border border-emerald-500/20 text-slate-100 rounded-bl-none shadow-md'
                 }`}
               >
-                <div className="flex items-center justify-between gap-4 mb-1.5 text-[10px] opacity-75 border-b border-white/10 pb-1">
-                  <span className="font-semibold uppercase tracking-wider">
-                    {msg.sender === 'user' ? 'You' : 'Grounded Assistant'}
-                  </span>
+                {/* Header Badge in Message */}
+                <div className="flex items-center justify-between gap-4 mb-2 text-[10px] opacity-80 border-b border-white/10 pb-1.5">
+                  <div className="flex items-center gap-1.5 font-bold uppercase tracking-wider">
+                    {msg.sender === 'user' ? (
+                      <span>You</span>
+                    ) : msg.known === false ? (
+                      <span className="flex items-center gap-1 text-amber-400 font-semibold">
+                        <AlertTriangle className="w-3 h-3" />
+                        INFORMATION NOT FOUND
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-1 text-emerald-400 font-semibold">
+                        <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                        GROUNDED ANSWER
+                      </span>
+                    )}
+                  </div>
                   <span>{msg.timestamp}</span>
                 </div>
 
-                <p className="whitespace-pre-wrap">{msg.text}</p>
+                <p className="whitespace-pre-wrap text-xs font-normal leading-relaxed">{msg.text}</p>
 
                 {/* Grounding & Source Citations Display */}
                 {msg.sender === 'assistant' && msg.citations && msg.citations.length > 0 && (
-                  <div className="mt-3 pt-2.5 border-t border-slate-800/80">
-                    <div className="flex items-center gap-1 text-[11px] font-semibold text-indigo-300 mb-1.5">
-                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                      <span>Source Citations ({msg.citations.length})</span>
+                  <div className="mt-3.5 pt-2.5 border-t border-emerald-500/15">
+                    <div className="flex items-center justify-between text-[11px] font-semibold text-emerald-300 mb-2">
+                      <span className="flex items-center gap-1">
+                        <Bot className="w-3.5 h-3.5 text-emerald-400" />
+                        Verifiable Sources ({msg.citations.length})
+                      </span>
                     </div>
-                    <div className="space-y-1">
+                    <div className="space-y-1.5">
                       {msg.citations.map((cite, idx) => (
                         <div
                           key={idx}
-                          className="flex items-center justify-between text-[10px] bg-slate-950/60 px-2.5 py-1.5 rounded border border-slate-800/80 text-slate-300"
+                          className="flex items-center justify-between text-[10px] bg-dark-950/80 px-3 py-1.5 rounded-lg border border-emerald-500/20 text-slate-200"
                         >
                           <span className="flex items-center gap-1.5 font-medium truncate">
-                            <FileText className="w-3 h-3 text-indigo-400 flex-shrink-0" />
-                            {cite.document} (Page {cite.page})
+                            <FileText className="w-3 h-3 text-emerald-400 flex-shrink-0" />
+                            {cite.document} &bull; Page {cite.page}
                           </span>
-                          <span className="font-mono text-slate-400">
+                          <span className="font-mono text-emerald-400/90 font-semibold">
                             Score: {(cite.score * 100).toFixed(1)}%
                           </span>
                         </div>
@@ -189,14 +208,14 @@ export const ChatSection: React.FC = () => {
         )}
 
         {isLoading && (
-          <div className="flex items-center gap-2 text-xs text-indigo-400 bg-indigo-950/20 border border-indigo-500/20 px-3.5 py-2.5 rounded-xl w-fit">
-            <Loader2 className="w-4 h-4 animate-spin" />
-            <span>Retrieving vectors &amp; synthesizing answer...</span>
+          <div className="flex items-center gap-2.5 text-xs text-emerald-400 bg-emerald-950/30 border border-emerald-500/20 px-4 py-3 rounded-2xl w-fit animate-pulse">
+            <Loader2 className="w-4 h-4 animate-spin text-emerald-400" />
+            <span>Retrieving evidence... Generating grounded answer...</span>
           </div>
         )}
 
         {errorMsg && (
-          <div className="flex items-center gap-2 text-xs text-rose-300 bg-rose-950/30 border border-rose-500/30 p-3 rounded-xl">
+          <div className="flex items-center gap-2 text-xs text-rose-300 bg-rose-950/30 border border-rose-500/30 p-3.5 rounded-2xl">
             <AlertCircle className="w-4 h-4 flex-shrink-0 text-rose-400" />
             <span>{errorMsg}</span>
           </div>
@@ -206,7 +225,22 @@ export const ChatSection: React.FC = () => {
       </div>
 
       {/* Input Bar */}
-      <div className="mt-auto pt-4 border-t border-slate-800/80">
+      <div className="mt-auto pt-4 border-t border-emerald-500/15">
+        {/* Quick Chip Row */}
+        {messages.length > 0 && (
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-2 mb-1 no-scrollbar">
+            {quickPrompts.slice(0, 3).map((prompt, idx) => (
+              <button
+                key={idx}
+                onClick={() => handleSendMessage(prompt)}
+                className="px-2.5 py-1 rounded-full bg-dark-900 border border-emerald-500/15 hover:border-emerald-500/40 text-[10px] font-medium text-slate-300 hover:text-emerald-300 whitespace-nowrap transition-all"
+              >
+                &quot;{prompt}&quot;
+              </button>
+            ))}
+          </div>
+        )}
+
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -218,20 +252,23 @@ export const ChatSection: React.FC = () => {
             type="text"
             value={inputQuery}
             onChange={(e) => setInputQuery(e.target.value)}
-            placeholder="Ask a question about your uploaded documents..."
-            className="w-full bg-slate-900/90 border border-slate-800 focus:border-indigo-500/60 rounded-xl px-4 py-3 text-xs text-slate-100 placeholder-slate-400 pr-12 focus:outline-none transition-colors"
+            placeholder="Ask anything about your documents..."
+            className="w-full bg-dark-900/90 border border-emerald-500/20 focus:border-emerald-400/60 focus:ring-1 focus:ring-emerald-400/30 rounded-xl px-4 py-3 text-xs text-white placeholder-slate-400 pr-12 focus:outline-none transition-all"
           />
           <button
             type="submit"
             disabled={!inputQuery.trim() || isLoading}
-            className="absolute right-2 p-2 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-800 disabled:text-slate-500 text-white rounded-lg transition-colors"
+            className="absolute right-2 p-2 bg-emerald-600 hover:bg-emerald-500 disabled:bg-dark-800 disabled:text-slate-600 text-white rounded-lg transition-colors shadow-md shadow-emerald-600/20"
           >
             <Send className="w-4 h-4" />
           </button>
         </form>
-        <div className="flex items-center justify-between mt-2 px-1 text-[11px] text-slate-400">
+        <div className="flex items-center justify-between mt-2.5 px-1 text-[11px] text-slate-400">
           <span>Grounding: Strict document context ONLY</span>
-          <span className="text-emerald-400 font-mono">Zero-Hallucination Guard active</span>
+          <span className="text-emerald-400 font-semibold flex items-center gap-1">
+            <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+            Zero-Hallucination Guard active
+          </span>
         </div>
       </div>
     </div>
