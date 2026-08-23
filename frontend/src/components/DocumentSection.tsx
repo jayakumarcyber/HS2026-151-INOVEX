@@ -75,7 +75,7 @@ export const DocumentSection: React.FC<DocumentSectionProps> = ({
     } catch (err: unknown) {
       const errorMsg =
         (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ||
-        (err instanceof Error ? err.message : 'Failed to upload document.');
+        (err instanceof Error ? err.message : 'Document upload failed.');
       setErrorMessage(errorMsg);
     } finally {
       setIsUploading(false);
@@ -112,7 +112,7 @@ export const DocumentSection: React.FC<DocumentSectionProps> = ({
     } catch (err: unknown) {
       const errorMsg =
         (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ||
-        (err instanceof Error ? err.message : 'Failed to extract document text.');
+        (err instanceof Error ? err.message : 'Unable to process document.');
       setErrorMessage(errorMsg);
     } finally {
       setProcessingDocId(null);
@@ -236,7 +236,7 @@ export const DocumentSection: React.FC<DocumentSectionProps> = ({
           {isUploading ? 'Uploading Knowledge PDF...' : 'Upload Knowledge Document'}
         </h3>
         <p className="text-[11px] text-slate-400 mt-1">
-          Drag &amp; drop your PDF here or browse files
+          Drag &amp; Drop your PDF here or Browse Files
         </p>
         <span className="mt-2 text-[10px] px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/15">
           Maximum 20 MB &bull; PDF only
@@ -258,7 +258,7 @@ export const DocumentSection: React.FC<DocumentSectionProps> = ({
             </div>
             <p className="text-xs font-semibold text-slate-200">No knowledge documents yet</p>
             <p className="text-[11px] text-slate-400 max-w-xs mt-1 leading-relaxed">
-              Upload a PDF to create your grounded knowledge base.
+              Upload a document to get started.
             </p>
           </div>
         ) : (

@@ -36,10 +36,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
               </span>
             </div>
             <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight text-gradient-emerald">
-              Enterprise Knowledge Intelligence
+              Ask Questions. Get Evidence-Based Answers.
             </h2>
             <p className="text-sm text-slate-300 mt-2 leading-relaxed font-normal">
-              Ask questions. Retrieve evidence. Get grounded answers.
+              Explore your provided knowledge documents through natural-language questions.
             </p>
           </div>
 

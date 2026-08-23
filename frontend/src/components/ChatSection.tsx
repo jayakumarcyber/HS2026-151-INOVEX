@@ -57,7 +57,7 @@ export const ChatSection: React.FC = () => {
 
       setMessages((prev) => [...prev, assistantMsg]);
     } catch (err: any) {
-      setErrorMsg(err.response?.data?.detail || 'Failed to reach backend RAG service. Please try again.');
+      setErrorMsg(err.response?.data?.detail || 'Unable to generate an answer.');
     } finally {
       setIsLoading(false);
     }
@@ -70,9 +70,8 @@ export const ChatSection: React.FC = () => {
 
   const quickPrompts = [
     'What is the minimum attendance requirement?',
-    'How many books can I borrow?',
-    'Are mobile phones allowed in exams?',
-    'What is the hostel fee?',
+    'How many books can a student borrow?',
+    'Are mobile phones allowed in the examination hall?',
   ];
 
   return (
@@ -116,14 +115,14 @@ export const ChatSection: React.FC = () => {
               <Sparkles className="w-7 h-7" />
             </div>
             <h3 className="text-sm font-bold text-white">
-              Ask your first grounded question
+              Ask your first question
             </h3>
             <p className="text-xs text-slate-400 max-w-md mt-1 leading-relaxed">
-              Your answers will be generated only from indexed knowledge. Missing facts trigger explicit refusal fallbacks.
+              Get answers grounded in your provided documents. Missing facts trigger explicit refusal fallbacks.
             </p>
 
             {/* Quick Suggestion Pills */}
-            <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-2 w-full max-w-lg">
+            <div className="mt-5 grid grid-cols-1 gap-2 w-full max-w-lg">
               {quickPrompts.map((prompt, idx) => (
                 <button
                   key={idx}
@@ -181,7 +180,7 @@ export const ChatSection: React.FC = () => {
                     <div className="flex items-center justify-between text-[11px] font-semibold text-emerald-300 mb-2">
                       <span className="flex items-center gap-1">
                         <Bot className="w-3.5 h-3.5 text-emerald-400" />
-                        Verifiable Sources ({msg.citations.length})
+                        Sources ({msg.citations.length})
                       </span>
                     </div>
                     <div className="space-y-1.5">
@@ -194,8 +193,8 @@ export const ChatSection: React.FC = () => {
                             <FileText className="w-3 h-3 text-emerald-400 flex-shrink-0" />
                             {cite.document} &bull; Page {cite.page}
                           </span>
-                          <span className="font-mono text-emerald-400/90 font-semibold">
-                            Score: {(cite.score * 100).toFixed(1)}%
+                          <span className="font-mono text-slate-400">
+                            Chunk: {cite.chunk_id}
                           </span>
                         </div>
                       ))}
@@ -229,7 +228,7 @@ export const ChatSection: React.FC = () => {
         {/* Quick Chip Row */}
         {messages.length > 0 && (
           <div className="flex items-center gap-1.5 overflow-x-auto pb-2 mb-1 no-scrollbar">
-            {quickPrompts.slice(0, 3).map((prompt, idx) => (
+            {quickPrompts.map((prompt, idx) => (
               <button
                 key={idx}
                 onClick={() => handleSendMessage(prompt)}

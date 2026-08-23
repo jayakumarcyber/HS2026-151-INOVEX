@@ -34,35 +34,33 @@ export const KnowledgeBaseStats: React.FC<KnowledgeBaseStatsProps> = ({ document
 
   const stats = [
     {
-      title: 'Ingested Documents',
+      title: 'Documents',
       value: totalDocs.toString(),
-      subtitle: totalDocs === 1 ? '1 PDF file in repository' : `${totalDocs} PDF files in repository`,
+      subtitle: totalDocs === 1 ? '1 PDF file' : `${totalDocs} PDF files`,
       icon: Files,
       color: 'from-emerald-500/20 to-teal-500/10',
       iconColor: 'text-emerald-400',
     },
     {
-      title: 'Extracted Pages',
-      value: `${totalPages}`,
+      title: 'Pages',
+      value: totalPages.toString(),
       subtitle: `${processedDocs.length} of ${totalDocs} documents processed`,
       icon: FileCheck,
       color: 'from-emerald-500/20 to-green-500/10',
       iconColor: 'text-emerald-300',
     },
     {
-      title: 'FAISS Vector Index',
-      value: indexStatus?.is_indexed ? `${indexStatus.chunks_count} Chunks` : 'Indexed',
-      subtitle: indexStatus?.is_indexed
-        ? `all-MiniLM-L6-v2 (384d)`
-        : 'Process PDFs to index vectors',
+      title: 'Knowledge Chunks',
+      value: indexStatus?.is_indexed ? indexStatus.chunks_count.toString() : '0',
+      subtitle: indexStatus?.is_indexed ? 'Vector embeddings indexed' : 'Awaiting document indexing',
       icon: Layers,
       color: 'from-teal-500/20 to-emerald-500/10',
       iconColor: 'text-teal-300',
     },
     {
-      title: 'Security & PII Guard',
-      value: 'Active',
-      subtitle: 'Path traversal & MIME shielded',
+      title: 'Vector Index',
+      value: indexStatus?.is_indexed ? 'Ready' : 'Unindexed',
+      subtitle: indexStatus?.is_indexed ? 'FAISS IndexFlatIP (384d)' : 'Process PDFs to build index',
       icon: Shield,
       color: 'from-emerald-500/20 to-emerald-600/10',
       iconColor: 'text-emerald-400',

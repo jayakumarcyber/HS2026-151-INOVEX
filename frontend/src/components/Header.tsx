@@ -32,7 +32,7 @@ export const Header: React.FC<HeaderProps> = ({ health, onRefreshHealth }) => {
                 </span>
               </div>
               <p className="text-xs text-slate-400 hidden sm:block">
-                Document-grounded intelligence with verifiable sources
+                Document-Grounded Intelligence
               </p>
             </div>
           </div>
