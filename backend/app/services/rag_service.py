@@ -1,4 +1,5 @@
 import logging
+import re
 from typing import Optional, List
 from app.config import settings
 from app.schemas.ask import AskRequest, AskResponse, SourceCitation
@@ -11,11 +12,35 @@ NO_DOCUMENTS_FALLBACK = "No knowledge documents are currently available. Please 
 UNKNOWN_ANSWER_FALLBACK = "I don't know. This information is not stated in the provided documents."
 ERROR_ANSWER_FALLBACK = "Sorry, I couldn't process your question right now. Please try again."
 
+# Keywords indicating explicit document questions
+DOCUMENT_KEYWORDS = [
+    "document", "documents", "pdf", "file", "page", "policy", "rule", "rules",
+    "attendance", "book", "books", "library", "exam", "examination", "fee", "fees",
+    "hostel", "working hour", "working hours", "leave", "course", "grade", "mark",
+    "marks", "syllabus", "credit", "credits", "admission", "principal", "department",
+    "clause", "section", "table", "content", "handbook", "regulation", "regulations"
+]
+
+# Exact or regex casual conversational patterns
+CASUAL_PHRASES = [
+    r"\bhi\b", r"\bhello\b", r"\bhey\b", r"\bvanakkam\b", r"\bgreetings\b",
+    r"\bgood morning\b", r"\bgood afternoon\b", r"\bgood evening\b",
+    r"\bhow are you\b", r"\bhow are you doing\b", r"\bhow r u\b", r"\bhow do you do\b",
+    r"\babout you\b", r"\btell me about yourself\b", r"\bwho are you\b", r"\bwhat are you\b",
+    r"\bwhat can you do\b", r"\bwhat is your purpose\b", r"\bintroduce yourself\b",
+    r"\bcan you help me\b", r"\bcan you assist me\b", r"\bhelp me\b",
+    r"\bthank you\b", r"\bthanks\b", r"\bthank u\b", r"\bbye\b", r"\bgoodbye\b", r"\bsee you\b",
+    r"\bcan you speak tamil\b", r"\bcan you speak english\b", r"\bdo you speak tamil\b",
+    r"\bspeak tamil\b", r"\btalk in tamil\b", r"\bcan you talk tamil\b",
+    r"\bepdi iruka\b", r"\bepdi irukinga\b", r"\benna panra\b", r"\bun pera enna\b",
+    r"\bnee yaaru\b", r"\bunaku enna theriyum\b", r"\bnalla irukiya\b"
+]
+
 
 class RAGService:
     """
-    Orchestrates Retrieval-Augmented Generation (RAG): intent detection, conversational messages,
-    document summarization, language-aware synthesis (English/Tamil/Tanglish), and source citations.
+    Orchestrates Retrieval-Augmented Generation (RAG): multi-tier intent detection,
+    casual conversational messaging, document summarization, language-aware synthesis, and source citations.
     """
 
     def __init__(
@@ -26,6 +51,29 @@ class RAGService:
         self.retriever = retriever_instance or retriever
         self.llm = llm_instance or llm_service
 
+    def _is_casual_intent(self, question: str) -> bool:
+        """
+        Classifies if the question is a casual conversational message.
+        Checks if it matches casual patterns and lacks explicit document keywords.
+        """
+        lower_q = question.lower().strip()
+
+        # If it explicitly asks about document topics, it is a document question
+        for doc_kw in DOCUMENT_KEYWORDS:
+            if doc_kw in lower_q:
+                return False
+
+        # Check casual phrases
+        for pattern in CASUAL_PHRASES:
+            if re.search(pattern, lower_q):
+                return True
+
+        # Short greetings / conversational checks
+        if lower_q in ["hi", "hello", "hey", "about you", "who are you", "what can you do", "epdi iruka", "enna panra", "un pera enna"]:
+            return True
+
+        return False
+
     def answer_question(
         self,
         question: str,
@@ -34,6 +82,7 @@ class RAGService:
     ) -> AskResponse:
         """
         Executes grounded RAG answering, conversational responses, or document summarization.
+        CLASSIFIES INTENT BEFORE CHECKING DOCUMENT AVAILABILITY.
         """
         if not question or not question.strip():
             return AskResponse(
@@ -48,12 +97,56 @@ class RAGService:
         lower_q = clean_question.lower()
         is_tamil = language == "ta"
 
+        # =========================================================================
+        # TIER 1: INTENT CLASSIFICATION BEFORE CHECKING DOCUMENT AVAILABILITY
+        # =========================================================================
+
+        # 1A. Conversational / Casual Intent Check (EXISTS INDEPENDENTLY OF DOCUMENTS)
+        if self._is_casual_intent(clean_question):
+            if is_tamil:
+                if "epdi iruka" in lower_q or "epdi irukinga" in lower_q:
+                    reply = "நான் நல்லா இருக்கேன்! உங்களுக்கு எப்படி உதவ வேண்டும்?"
+                elif "enna panra" in lower_q:
+                    reply = "உங்கள் கேள்விகளுக்கு பதிலளிக்க தயாராக இருக்கிறேன்!"
+                elif "un pera enna" in lower_q or "nee yaaru" in lower_q or "who are you" in lower_q:
+                    reply = "நான் INOVEX AI Powered Knowledge Assistant."
+                elif "unaku enna theriyum" in lower_q or "what can you do" in lower_q:
+                    reply = "நான் உங்கள் ஆவணங்களை பகுப்பாய்வு செய்து, சுருக்கம் வழங்கி, கேள்விகளுக்கு பதிலளிப்பேன்."
+                elif "thank" in lower_q:
+                    reply = "நன்றி! வேறு ஏதேனும் கேள்விகள் உள்ளதா?"
+                else:
+                    reply = "வணக்கம்! நான் உங்கள் AI உதவியாளர். உங்கள் ஆவணங்களைப் பற்றி என்ன தெரிந்து கொள்ள வேண்டும்?"
+            else:
+                if "about you" in lower_q or "tell me about yourself" in lower_q or "who are you" in lower_q or "what are you" in lower_q or "introduce yourself" in lower_q:
+                    reply = "I'm an AI Powered Knowledge Assistant designed to help users understand and query their uploaded documents."
+                elif "what can you do" in lower_q or "what is your purpose" in lower_q or "unaku enna theriyum" in lower_q:
+                    reply = "I can analyze uploaded documents, answer questions using their content, summarize documents, and respond in English, Tamil, or Tanglish."
+                elif "how are you" in lower_q or "epdi iruka" in lower_q:
+                    reply = "I'm doing well! I'm ready to help you with your documents or answer general questions about how I work."
+                elif "can you speak tamil" in lower_q or "speak tamil" in lower_q or "do you speak tamil" in lower_q:
+                    reply = "Yes! I can answer your document-based questions in Tamil. Click the Tamil button to set language preference."
+                elif "thank" in lower_q:
+                    reply = "You're welcome! Feel free to ask more questions about your documents."
+                elif "bye" in lower_q or "goodbye" in lower_q:
+                    reply = "Goodbye! Have a great day ahead."
+                else:
+                    reply = "Hello! How can I help you today?"
+
+            return AskResponse(
+                answer=reply,
+                known=False,
+                grounded=False,
+                response_type="NORMAL",
+                sources=[],
+            )
+
+        # Retrieve document store stats for Document Answering / Summarization
         store = getattr(self.retriever, "vector_store", None)
         total_chunks = len(store.metadata) if store and store.metadata else 0
         has_docs = total_chunks > 0 and store is not None and store.index is not None and store.index.ntotal > 0
 
-        # Case 1: Summarize Document Request
-        if is_summary or "summarize document" in lower_q or "summarize pdf" in lower_q or "give me a summary" in lower_q:
+        # 1B. Summarize Document Intent Check
+        if is_summary or "summarize document" in lower_q or "summarize pdf" in lower_q or "give me a summary" in lower_q or "summarize this document" in lower_q:
             if not has_docs:
                 return AskResponse(
                     answer=NO_DOCUMENTS_FALLBACK,
@@ -63,7 +156,6 @@ class RAGService:
                     sources=[],
                 )
 
-            # Retrieve top representative chunks from store for summary
             summary_sources: List[SourceCitation] = []
             seen_docs = set()
             doc_texts = []
@@ -122,7 +214,6 @@ class RAGService:
                     sources=summary_sources,
                 )
 
-            # Fallback summary if LLM unavailable
             fallback_summary = (
                 "### 📄 Document Summary\n\n"
                 f"**Processed Document:** {list(seen_docs)[0] if seen_docs else 'Knowledge Document'}\n\n"
@@ -140,43 +231,9 @@ class RAGService:
                 sources=summary_sources,
             )
 
-        # Case 2: Intent Detection for Casual Conversational Messages (NORMAL)
-        casual_greetings = [
-            "hello", "hi", "hey", "hello!", "hi!", "hey!", "good morning", "good afternoon", "good evening",
-            "greetings", "how are you?", "how are you", "epdi iruka?", "epdi iruka", "enna panra?", "un pera enna?",
-            "tell me about yourself", "what can you do?", "thank you", "thanks", "can you speak tamil?"
-        ]
-
-        if lower_q in casual_greetings or lower_q.startswith("hello ") or lower_q.startswith("hi "):
-            if is_tamil:
-                casual_reply = (
-                    "வணக்கம்! நான் உங்கள் ஆவண அடிப்படையிலான AI உதவியாளர். "
-                    "உங்கள் பதிவேற்றப்பட்ட ஆவணங்களிலிருந்து கேள்விகளைக் கேட்கலாம்."
-                )
-            elif "epdi iruka" in lower_q:
-                casual_reply = "நான் நல்லா இருக்கேன்! உங்கள் ஆவணங்களைப் பற்றி என்ன தெரிந்து கொள்ள வேண்டும்?"
-            elif "enna panra" in lower_q:
-                casual_reply = "உங்கள் ஆவணங்களிலிருந்து கேள்விகளுக்கு பதிலளிக்க தயாராக இருக்கிறேன்!"
-            elif "un pera enna" in lower_q:
-                casual_reply = "நான் INOVEX AI Powered Knowledge Assistant."
-            elif "can you speak tamil" in lower_q or "tamil" in lower_q:
-                casual_reply = "ஆம்! நான் தமிழில் உங்கள் ஆவணக் கேள்விகளுக்கு பதிலளிக்க முடியும். Tamil பொத்தானைக் கிளிக் செய்யவும்."
-            elif "thank" in lower_q:
-                casual_reply = "You're welcome! Feel free to ask more questions about your documents."
-            elif "how are you" in lower_q:
-                casual_reply = "I'm doing great! How can I help you with your knowledge documents today?"
-            else:
-                casual_reply = "Hello! Ask me any question about your uploaded knowledge documents."
-
-            return AskResponse(
-                answer=casual_reply,
-                known=False,
-                grounded=False,
-                response_type="NORMAL",
-                sources=[],
-            )
-
-        # Case 3: Check document availability for factual questions (State A: NO_DOCUMENT)
+        # =========================================================================
+        # TIER 2: DOCUMENT QUESTION INTENT -> CHECK DOCUMENT AVAILABILITY (NO_DOCUMENT)
+        # =========================================================================
         if not has_docs:
             logger.info(f"Question received: '{clean_question[:50]}...' | Indexed chunks: 0 | Result: NO_DOCUMENT")
             msg = (
@@ -192,7 +249,9 @@ class RAGService:
                 sources=[],
             )
 
-        # Case 4: Retrieve relevant vector chunks across ALL indexed documents
+        # =========================================================================
+        # TIER 3: FAISS VECTOR RETRIEVAL ACROSS INDEXED DOCUMENTS
+        # =========================================================================
         try:
             results = self.retriever.retrieve(clean_question, top_k=settings.DEFAULT_TOP_K)
         except Exception as exc:
@@ -213,9 +272,16 @@ class RAGService:
             f"Retrieved: {retrieved_count} | Top Score: {top_score:.4f}"
         )
 
-        # Case 5: Evidence Sufficiency Check (State B: UNKNOWN_DOCUMENT)
-        if not results or len(results) == 0 or top_score < settings.RELEVANCE_THRESHOLD:
-            logger.info(f"Result: UNKNOWN_DOCUMENT (Score {top_score:.4f} < Threshold {settings.RELEVANCE_THRESHOLD})")
+        # Calculate effective threshold (allow slightly lower vector score for short/Tanglish document queries containing key terms)
+        effective_threshold = settings.RELEVANCE_THRESHOLD
+        if any(kw in lower_q for kw in ["attendance", "evlo", "venum", "policy", "rule", "hours", "book"]):
+            effective_threshold = 0.30
+
+        # =========================================================================
+        # TIER 4: EVIDENCE SUFFICIENCY CHECK -> UNKNOWN DOCUMENT REFUSAL
+        # =========================================================================
+        if not results or len(results) == 0 or top_score < effective_threshold:
+            logger.info(f"Result: UNKNOWN_DOCUMENT (Score {top_score:.4f} < Threshold {effective_threshold:.4f})")
             unknown_msg = (
                 "எனக்குத் தெரியாது. வழங்கப்பட்ட ஆவணங்களில் இந்தத் தகவல் கூறப்படவில்லை."
                 if is_tamil
@@ -239,7 +305,9 @@ class RAGService:
             for item in results
         ]
 
-        # Case 6: Construct Document Grounded Prompt in English or Tamil
+        # =========================================================================
+        # TIER 5: DOCUMENT GROUNDED ANSWER SYNTHESIS
+        # =========================================================================
         context_blocks = []
         for idx, item in enumerate(results, 1):
             context_blocks.append(
@@ -306,7 +374,6 @@ class RAGService:
                 sources=sources,
             )
 
-        # Fallback if LLM API is unavailable: return top retrieved evidence text directly
         top_text = results[0].text.strip()
         upper_text = top_text.upper()
         if "SYSTEM OVERRIDE" in upper_text or "IGNORE ALL" in upper_text or "REVEAL" in upper_text:
