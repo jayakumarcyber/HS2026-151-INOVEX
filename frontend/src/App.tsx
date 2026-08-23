@@ -22,7 +22,7 @@ export const App: React.FC = () => {
       const docs = await apiService.getDocuments();
       setDocuments(docs);
     } catch {
-      // If backend is unreachable, keep existing list or empty
+      // Keep existing list if backend loading
     } finally {
       setIsDocsLoading(false);
     }
@@ -54,7 +54,6 @@ export const App: React.FC = () => {
 
   useEffect(() => {
     checkBackendHealth();
-    // Periodic health check and doc sync every 30 seconds
     const interval = setInterval(() => {
       checkBackendHealth();
     }, 30000);
@@ -62,24 +61,19 @@ export const App: React.FC = () => {
   }, [checkBackendHealth]);
 
   return (
-    <div className="min-h-screen bg-dark-950 text-slate-100 flex flex-col relative selection:bg-emerald-500/30 selection:text-emerald-200 bg-grid-pattern">
-      {/* Background Radial Ambient Glow */}
-      <div className="fixed top-0 left-1/4 w-[600px] h-[600px] bg-emerald-500/5 rounded-full blur-[140px] pointer-events-none" />
-      <div className="fixed bottom-0 right-1/4 w-[500px] h-[500px] bg-teal-500/5 rounded-full blur-[120px] pointer-events-none" />
-
+    <div className="min-h-screen bg-[#07110C] text-[#F5F7F6] flex flex-col font-sans">
       <Header health={health} onRefreshHealth={checkBackendHealth} />
 
-      <div className="flex-1 relative z-10">
+      <div className="flex-1">
         <Dashboard
-          health={health}
           documents={documents}
           isDocsLoading={isDocsLoading}
           onRefreshDocuments={fetchDocuments}
         />
       </div>
 
-      <footer className="border-t border-emerald-500/10 py-4 text-center text-xs text-slate-400 relative z-10 bg-dark-950/80 backdrop-blur-md">
-        <p>AI Powered Knowledge Assistant &bull; Repository: HS2026-151-INOVEX &bull; Grounded Document Intelligence</p>
+      <footer className="border-t border-[#1C3326] py-3.5 text-center text-xs text-[#738078] bg-[#07110C]">
+        <p>AI Powered Knowledge Assistant &bull; Repository: HS2026-151-INOVEX &bull; Document Grounded Knowledge Workspace</p>
       </footer>
     </div>
   );

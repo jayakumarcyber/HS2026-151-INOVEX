@@ -4,89 +4,53 @@
 
 @layer base {
   body {
-    background-color: #020807;
-    color: #e2e8f0;
+    background-color: #07110C;
+    color: #F5F7F6;
     min-height: 100vh;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
     overflow-x: hidden;
-    selection-background-color: rgba(16, 185, 129, 0.25);
-    selection-color: #6ee7b7;
+    -webkit-font-smoothing: antialiased;
   }
 }
 
-/* Glassmorphism Panels & Cards */
-.glass-panel {
-  background: rgba(6, 17, 15, 0.75);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(52, 211, 153, 0.12);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+/* Enterprise Surface Containers */
+.saas-card {
+  background-color: #0B1711;
+  border: 1px solid #1C3326;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
-.glass-card {
-  background: rgba(10, 25, 21, 0.65);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(52, 211, 153, 0.15);
+.saas-subcard {
+  background-color: #101F17;
+  border: 1px solid #1C3326;
+  border-radius: 10px;
 }
 
-.glass-card-hover {
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.glass-card-hover:hover {
-  transform: translateY(-3px);
-  border-color: rgba(52, 211, 153, 0.35);
-  box-shadow: 0 12px 24px -6px rgba(16, 185, 129, 0.15), 0 0 15px 0 rgba(16, 185, 129, 0.1);
-}
-
-/* Glow effects */
-.glow-emerald {
-  box-shadow: 0 0 25px -5px rgba(16, 185, 129, 0.2);
-}
-
-.glow-emerald-lg {
-  box-shadow: 0 0 40px -10px rgba(16, 185, 129, 0.3);
-}
-
-.text-gradient-emerald {
-  background: linear-gradient(135deg, #ffffff 0%, #a7f3d0 50%, #34d399 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-/* Grid overlay pattern */
-.bg-grid-pattern {
-  background-size: 32px 32px;
-  background-image: 
-    linear-gradient(to right, rgba(52, 211, 153, 0.03) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(52, 211, 153, 0.03) 1px, transparent 1px);
-}
-
-/* Custom scrollbar */
+/* Clean Custom Scrollbar */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(2, 8, 7, 0.8);
+  background: #07110C;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(16, 185, 129, 0.25);
-  border-radius: 9999px;
+  background: #1C3326;
+  border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(16, 185, 129, 0.45);
+  background: #16A34A;
 }
 
-/* Message entrance animation */
+/* Message Entrance Animation (150ms) */
 @keyframes messageEntrance {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(4px);
   }
   to {
     opacity: 1;
@@ -95,5 +59,14 @@
 }
 
 .animate-message-entrance {
-  animation: messageEntrance 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: messageEntrance 0.15s ease-out forwards;
+}
+
+/* Utility to hide scrollbars where needed */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
